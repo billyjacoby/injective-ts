@@ -1,7 +1,5 @@
 import { grpc } from '@improbable-eng/grpc-web'
-import { NodeHttpTransport } from '@improbable-eng/grpc-web-node-http-transport'
 import { ReactNativeTransport } from '@improbable-eng/grpc-web-react-native-transport'
-import { isServerSide } from '../utils/helpers'
 import { GrpcUnaryRequestException } from '@injectivelabs/exceptions'
 import { isBrowser } from '../utils/helpers'
 import { getGrpcTransport } from '../utils/grpc'

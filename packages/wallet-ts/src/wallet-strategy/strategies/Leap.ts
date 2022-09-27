@@ -48,7 +48,7 @@ export default class Leap
 
       const accounts = await leapWallet.getAccounts()
 
-      return accounts.map((account) => account.address)
+      return accounts.map((account: any) => account.address)
     } catch (e: unknown) {
       throw new CosmosWalletException(new Error((e as any).message), {
         code: UnspecifiedErrorCode,

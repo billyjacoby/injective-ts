@@ -42,7 +42,7 @@ export class LeapWallet {
     }
   }
 
-  async getAccounts() {
+  async getAccounts(): Promise<any> {
     const { chainId } = this
     const leap = this.getLeap()
 

@@ -74,7 +74,7 @@ export class KeplrWallet {
     }
   }
 
-  async getAccounts() {
+  async getAccounts(): Promise<any> {
     const { chainId } = this
     const keplr = this.getKeplr()
 
