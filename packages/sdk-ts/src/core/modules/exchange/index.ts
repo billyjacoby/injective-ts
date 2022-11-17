@@ -9,6 +9,7 @@ export { default as MsgCreateDerivativeMarketOrder } from './msgs/MsgCreateDeriv
 export { default as MsgCreateSpotLimitOrder } from './msgs/MsgCreateSpotLimitOrder'
 export { default as MsgCreateSpotMarketOrder } from './msgs/MsgCreateSpotMarketOrder'
 export { default as MsgDeposit } from './msgs/MsgDeposit'
+export { default as MsgExternalTransfer } from './msgs/MsgExternalTransfer'
 export { default as MsgWithdraw } from './msgs/MsgWithdraw'
 export { default as MsgIncreasePositionMargin } from './msgs/MsgIncreasePositionMargin'
 export { default as MsgInstantSpotMarketLaunch } from './msgs/MsgInstantSpotMarketLaunch'
