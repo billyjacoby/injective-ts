@@ -11,6 +11,11 @@ import { Wallet, WalletDeviceType } from '../../types/enums'
 export type onAccountChangeCallback = (account: string) => void
 export type onChainIdChangeCallback = () => void
 
+export interface WalletConnectQRCodeModalOptions {
+  mobileLinks?: string[]
+  desktopLinks?: string[]
+}
+
 export interface WalletStrategyEthereumOptions {
   ethereumChainId: EthereumChainId
   rpcUrl: string
@@ -21,6 +26,7 @@ export interface EthereumWalletStrategyArgs {
   chainId: ChainId
   ethereumOptions: WalletStrategyEthereumOptions
   web3: Web3
+  walletConnectQRCodeModalOptions?: WalletConnectQRCodeModalOptions
 }
 
 export interface ConcreteCosmosWalletStrategy {
@@ -69,6 +75,7 @@ export interface WalletStrategyArguments
   chainId: ChainId
   ethereumOptions?: WalletStrategyEthereumOptions
   disabledWallets?: Wallet[]
+  walletConnectQRCodeModalOptions?: WalletConnectQRCodeModalOptions
   wallet?: Wallet
 }
 

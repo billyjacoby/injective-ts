@@ -2,7 +2,6 @@
   "name": "@injectivelabs/injective-ts",
   "version": "0.0.1",
   "main": "index.js",
-  "private": "true",
   "license": "Apache-2.0",
   "author": "@InjectiveLabs",
   "repository": "https://github.com/InjectiveLabs/injective-ts",

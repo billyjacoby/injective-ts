@@ -14,6 +14,7 @@ import {
   EthereumWalletStrategyArgs,
   onAccountChangeCallback,
   onChainIdChangeCallback,
+  WalletConnectQRCodeModalOptions,
   WalletStrategyArguments,
   WalletStrategyEthereumOptions,
 } from '../types'
@@ -77,6 +78,8 @@ const createStrategy = ({
     web3: web3 as Web3,
     chainId: args.chainId,
     ethereumOptions: args.ethereumOptions as WalletStrategyEthereumOptions,
+    walletConnectQRCodeModalOptions:
+      args.walletConnectQRCodeModalOptions as WalletConnectQRCodeModalOptions,
   } as EthereumWalletStrategyArgs
 
   switch (wallet) {

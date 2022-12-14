@@ -19,6 +19,7 @@ import { DirectSignResponse } from '@cosmjs/proto-signing'
 import {
   ConcreteWalletStrategy,
   EthereumWalletStrategyArgs,
+  WalletConnectQRCodeModalOptions,
   WalletStrategyEthereumOptions,
 } from '../../types'
 import BaseConcreteStrategy from './Base'
@@ -34,10 +35,15 @@ export default class WalletConnect
 
   private readonly ethereumOptions: WalletStrategyEthereumOptions | undefined
 
+  private readonly walletConnectQRCodeModalOptions:
+    | WalletConnectQRCodeModalOptions
+    | undefined
+
   constructor(args: EthereumWalletStrategyArgs) {
     super(args)
     this.ethereumOptions = args.ethereumOptions
     this.walletConnectProvider = this.createWalletConnectProvider()
+    this.walletConnectQRCodeModalOptions = args.walletConnectQRCodeModalOptions
     this.web3 = new Web3(this.walletConnectProvider as unknown as provider)
   }
 
@@ -275,6 +281,9 @@ export default class WalletConnect
     return new WalletConnectProvider({
       rpc: {
         [ethereumOptions.ethereumChainId]: ethereumOptions.rpcUrl,
+      },
+      qrcodeModalOptions: {
+        ...this.walletConnectQRCodeModalOptions,
       },
     }) as WalletConnectProvider
   }
