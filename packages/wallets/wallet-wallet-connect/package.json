@@ -56,12 +56,21 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@bangjelkoski/wallet-connect-ethereum-provider": "2.17.2",
     "@bangjelkoski/wc-ethereum-provider": "2.18.1",
     "@injectivelabs/exceptions": "^1.14.41-alpha.0",
     "@injectivelabs/sdk-ts": "^1.14.41-alpha.14",
     "@injectivelabs/ts-types": "^1.14.41-alpha.1",
     "@injectivelabs/wallet-base": "^1.14.41-alpha.16"
+=======
+    "@injectivelabs/exceptions": "^1.14.34-alpha.0",
+    "@injectivelabs/sdk-ts": "^1.14.34-alpha.0",
+    "@injectivelabs/ts-types": "^1.14.34-alpha.0",
+    "@injectivelabs/utils": "^1.14.34-alpha.0",
+    "@injectivelabs/wallet-base": "^1.14.34-alpha.0",
+    "@walletconnect/ethereum-provider": "2.17.2"
+>>>>>>> 0ccb2dab2 (chore: release)
   },
   "gitHead": "6442ae377bbfb3459d2fb3a44c650630a5b7f445",
   "typedoc": {
