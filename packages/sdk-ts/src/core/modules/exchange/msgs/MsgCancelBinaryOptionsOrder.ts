@@ -1,9 +1,9 @@
-import { MsgBase } from '../../MsgBase.js'
-import snakecaseKeys from 'snakecase-keys'
 import {
-  InjectiveExchangeV1Beta1Tx,
   InjectiveExchangeV1Beta1Exchange,
+  InjectiveExchangeV1Beta1Tx,
 } from '@injectivelabs/core-proto-ts'
+import snakecaseKeys from 'snakecase-keys'
+import { MsgBase } from '../../MsgBase.js'
 
 export declare namespace MsgCancelBinaryOptionsOrder {
   export interface Params {
@@ -34,34 +34,31 @@ export default class MsgCancelBinaryOptionsOrder extends MsgBase<
   public toProto() {
     const { params } = this
 
-    const message =
-      InjectiveExchangeV1Beta1Tx.MsgCancelBinaryOptionsOrder.create()
+    const message = new InjectiveExchangeV1Beta1Tx.MsgCancelBinaryOptionsOrder()
 
-    message.sender = params.injectiveAddress
-    message.marketId = params.marketId
-    message.subaccountId = params.subaccountId
+    message.setSender(params.injectiveAddress)
+    message.setMarketId(params.marketId)
+    message.setSubaccountId(params.subaccountId)
 
     if (params.orderHash) {
-      message.orderHash = params.orderHash
+      message.setOrderHash(params.orderHash)
     }
 
     // TODO: Send order.orderMask instead when chain handles order mask properly.
-    message.orderMask = InjectiveExchangeV1Beta1Exchange.OrderMask.ANY
+    message.setOrderMask(InjectiveExchangeV1Beta1Exchange.OrderMask.ANY)
 
     if (params.cid) {
-      message.cid = params.cid
+      message.setCid(params.cid)
     }
 
     return message
   }
 
   public toData() {
-    const proto = this.toProto()
-
-    return {
+    const message = this.toProto()
+    return Object.assign(message, {
       '@type': '/injective.exchange.v1beta1.MsgCancelBinaryOptionsOrder',
-      ...proto,
-    }
+    })
   }
 
   public toAmino() {
@@ -96,8 +93,6 @@ export default class MsgCancelBinaryOptionsOrder extends MsgBase<
   }
 
   public toBinary(): Uint8Array {
-    return InjectiveExchangeV1Beta1Tx.MsgCancelBinaryOptionsOrder.encode(
-      this.toProto(),
-    ).finish()
+    return this.toProto().serializeBinary()
   }
 }

@@ -14,9 +14,9 @@ wasmd_branch=v0.53.x-inj
 ibc_go_branch=v8.3.x-inj
 
 # remove old gen
-rm -rf $BUILD_DIR
-rm -rf $PROTO_DIR
-rm -rf $TS_OUTPUT_DIR
+# rm -rf $BUILD_DIR
+# rm -rf $PROTO_DIR
+# rm -rf $TS_OUTPUT_DIR
 
 ########################################
 ######## TS PROTO GENERATION ###########
@@ -32,18 +32,23 @@ mkdir -p $TS_OUTPUT_DIR/cjs
 mkdir -p $TS_OUTPUT_DIR/esm
 mkdir -p $TS_OUTPUT_DIR/proto
 
+# Install required protoc plugins
+# echo "Installing protoc plugins..."
+# npm install -g protoc-gen-js
+# npm install -g protoc-gen-grpc-web
+
 ########################################
 ###### REMOTE PROTO DEFINITIONS ########
 ########################################
 
 ## Clone current proto definitions from core
-git clone https://github.com/InjectiveLabs/injective-core.git $BUILD_DIR/injective-core -b $injective_core_branch --depth 1 --single-branch > /dev/null
-cp -r $BUILD_DIR/injective-core/proto/injective $PROTO_DIR
+# git clone https://github.com/InjectiveLabs/injective-core.git $BUILD_DIR/injective-core -b $injective_core_branch --depth 1 --single-branch > /dev/null
+# cp -r $BUILD_DIR/injective-core/proto/injective $PROTO_DIR
 
 ## Third Party proto definitions
-git clone https://github.com/InjectiveLabs/cosmos-sdk.git $BUILD_DIR/cosmos-sdk -b $cosmos_sdk_branch --depth 1 --single-branch > /dev/null
-git clone https://github.com/InjectiveLabs/wasmd $BUILD_DIR/wasmd -b $wasmd_branch --depth 1 --single-branch > /dev/null
-git clone https://github.com/InjectiveLabs/ibc-go $BUILD_DIR/ibc-go -b $ibc_go_branch --depth 1 --single-branch > /dev/null
+# git clone https://github.com/InjectiveLabs/cosmos-sdk.git $BUILD_DIR/cosmos-sdk -b $cosmos_sdk_branch --depth 1 --single-branch > /dev/null
+# git clone https://github.com/InjectiveLabs/wasmd $BUILD_DIR/wasmd -b $wasmd_branch --depth 1 --single-branch > /dev/null
+# git clone https://github.com/InjectiveLabs/ibc-go $BUILD_DIR/ibc-go -b $ibc_go_branch --depth 1 --single-branch > /dev/null
 
 buf export $BUILD_DIR/cosmos-sdk --output=$PROTO_DIR
 buf export $BUILD_DIR/wasmd --exclude-imports --output=$PROTO_DIR
@@ -59,15 +64,11 @@ proto_dirs=$(find $PROTO_DIR -path -prune -o -name '*.proto' -print0 | xargs -0 
 # gen using ts-proto
 npm --prefix $ROOT_DIR install
 for dir in $proto_dirs; do
+    # Generate JavaScript code with CommonJS imports
     protoc \
-    --plugin="$ROOT_DIR/node_modules/.bin/protoc-gen-ts_proto" \
-    --ts_proto_opt="esModuleInterop=true" \
-    --ts_proto_opt="forceLong=string" \
-    --ts_proto_opt="env=both" \
-    --ts_proto_opt="useExactTypes=false" \
-    --ts_proto_opt="outputClientImpl=grpc-web" \
-    --ts_proto_out="$TS_OUTPUT_DIR/proto" \
     -I "$PROTO_DIR" \
+    --js_out=import_style=commonjs,binary:$TS_OUTPUT_DIR/proto \
+    --grpc-web_out=import_style=typescript,mode=grpcweb:$TS_OUTPUT_DIR/proto \
     $(find "${dir}" -maxdepth 1 -name '*.proto')
 done
 
@@ -78,16 +79,16 @@ done
 
 echo "Compiling npm packages..."
 
-## 1. Replace packages
-search1="@improbable-eng/grpc-web"
-replace1="@injectivelabs/grpc-web"
+## Remove old improbable-eng replacement since we're using official grpc-web now
+# search1="@improbable-eng/grpc-web"
+# replace1="@injectivelabs/grpc-web"
 
-FILES=$( find $TS_OUTPUT_DIR -type f )
+# FILES=$( find $TS_OUTPUT_DIR -type f )
 
-for file in $FILES
-do
-  sed -ie "s/${search1//\//\\/}/${replace1//\//\\/}/g" "$file"
-done
+# for file in $FILES
+# do
+#   sed -ie "s/${search1//\//\\/}/${replace1//\//\\/}/g" "$file"
+# done
 
 search1="getExtension():"
 replace1="// @ts-ignore \n  getExtension():"
@@ -96,8 +97,7 @@ replace2="// @ts-ignore \n  setExtension("
 
 FILES=$( find $TS_OUTPUT_DIR -type f -name '*.d.ts' )
 
-for file in $FILES
-do
+for file in $FILES; do
   sed -ie "s/${search1//\//\\/}/${replace1//\//\\/}/g" "$file"
   sed -ie "s/${search2//\//\\/}/${replace2//\//\\/}/g" "$file"
 done
@@ -107,8 +107,7 @@ replace3="protobufjs/minimal.js"
 
 FILES=$( find $TS_OUTPUT_DIR -type f )
 
-for file in $FILES
-do
+for file in $FILES; do
   sed -ie "s/${search3//\//\\/}/${replace3//\//\\/}/g" "$file"
 done
 
@@ -141,9 +140,10 @@ cp $TS_STUB_DIR/package.json.core-proto-ts.template $TS_OUTPUT_DIR/package.json
 npm --prefix $ROOT_DIR run tscEsmFix
 
 # 6. Clean up folders
-rm -rf $BUILD_DIR
-rm -rf $PROTO_DIR
-rm -rf $TS_OUTPUT_DIR/proto
+## Keeping all generated files and cloned repos in the gen folder
+# rm -rf $BUILD_DIR
+# rm -rf $PROTO_DIR
+# rm -rf $TS_OUTPUT_DIR/proto
 find $TS_OUTPUT_DIR -name "*.jse" -type f -delete
 find $TS_OUTPUT_DIR -name "*.tse" -type f -delete
 find $TS_OUTPUT_DIR -name "*.jsone" -type f -delete

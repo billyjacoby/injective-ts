@@ -1,20 +1,26 @@
-import snakecaseKeys from 'snakecase-keys'
-import { MsgBase } from '../../MsgBase.js'
 import {
-  CosmosBankV1Beta1Tx,
   CosmosBankV1Beta1Bank,
+  CosmosBankV1Beta1Tx,
   CosmosBaseV1Beta1Coin,
 } from '@injectivelabs/core-proto-ts'
+import snakecaseKeys from 'snakecase-keys'
+import { MsgBase } from '../../MsgBase.js'
 
 export declare namespace MsgMultiSend {
   export interface Params {
     inputs: {
       address: string
-      coins: CosmosBaseV1Beta1Coin.Coin[]
+      coins: {
+        denom: string
+        amount: string
+      }[]
     }[]
     outputs: {
       address: string
-      coins: CosmosBaseV1Beta1Coin.Coin[]
+      coins: {
+        denom: string
+        amount: string
+      }[]
     }[]
   }
 
@@ -25,8 +31,8 @@ export declare namespace MsgMultiSend {
  * @category Messages
  */
 export default class MsgMultiSend extends MsgBase<
-  MsgMultiSend.Proto,
-  MsgMultiSend.Params
+  MsgMultiSend.Params,
+  MsgMultiSend.Proto & { '@type'?: string }
 > {
   static fromJSON(params: MsgMultiSend.Params): MsgMultiSend {
     return new MsgMultiSend(params)
@@ -35,64 +41,61 @@ export default class MsgMultiSend extends MsgBase<
   public toProto() {
     const { params } = this
 
+    const message = new CosmosBankV1Beta1Tx.MsgMultiSend()
+
     const inputs = params.inputs.map((i) => {
-      const input = CosmosBankV1Beta1Bank.Input.create()
-
-      input.address = i.address
-      input.coins = i.coins.map((c) => {
-        const coin = CosmosBaseV1Beta1Coin.Coin.create()
-
-        coin.denom = c.denom
-        coin.amount = c.amount
-
-        return coin
-      })
-
+      const input = new CosmosBankV1Beta1Bank.Input()
+      input.setAddress(i.address)
+      input.setCoinsList(
+        i.coins.map((c) => {
+          const coin = new CosmosBaseV1Beta1Coin.Coin()
+          coin.setDenom(c.denom)
+          coin.setAmount(c.amount)
+          return coin
+        }),
+      )
       return input
     })
 
     const outputs = params.outputs.map((o) => {
-      const output = CosmosBankV1Beta1Bank.Output.create()
-
-      output.address = o.address
-      output.coins = o.coins.map((c) => {
-        const coin = CosmosBaseV1Beta1Coin.Coin.create()
-
-        coin.denom = c.denom
-        coin.amount = c.amount
-
-        return coin
-      })
-
+      const output = new CosmosBankV1Beta1Bank.Output()
+      output.setAddress(o.address)
+      output.setCoinsList(
+        o.coins.map((c) => {
+          const coin = new CosmosBaseV1Beta1Coin.Coin()
+          coin.setDenom(c.denom)
+          coin.setAmount(c.amount)
+          return coin
+        }),
+      )
       return output
     })
 
-    const message = CosmosBankV1Beta1Tx.MsgMultiSend.create()
-
-    message.inputs = inputs
-    message.outputs = outputs
+    message.setInputsList(inputs)
+    message.setOutputsList(outputs)
 
     return message
   }
 
   public toData() {
-    const proto = this.toProto()
-
-    return {
-      '@type': '/cosmos.bank.v1beta1.MsgMultiSend',
-      ...proto,
-    }
+    const message = this.toProto()
+    Object.defineProperty(message, '@type', {
+      enumerable: true,
+      value: '/cosmos.bank.v1beta1.MsgMultiSend',
+    })
+    return message as MsgMultiSend.Proto & { '@type': string }
   }
 
   public toAmino() {
-    const proto = this.toProto()
-    const message = {
-      ...snakecaseKeys(proto),
+    const message = this.toProto()
+    const messageObject = message.toObject()
+    const messageJson = {
+      ...snakecaseKeys(messageObject),
     }
 
     return {
       type: 'cosmos-sdk/MsgMultiSend',
-      value: message,
+      value: messageJson,
     }
   }
 
@@ -107,15 +110,15 @@ export default class MsgMultiSend extends MsgBase<
   }
 
   public toDirectSign() {
-    const proto = this.toProto()
+    const message = this.toProto()
 
     return {
       type: '/cosmos.bank.v1beta1.MsgMultiSend',
-      message: proto,
+      message: message,
     }
   }
 
   public toBinary(): Uint8Array {
-    return CosmosBankV1Beta1Tx.MsgMultiSend.encode(this.toProto()).finish()
+    return this.toProto().serializeBinary()
   }
 }

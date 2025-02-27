@@ -2083,7 +2083,7 @@
 
 "@ethereumjs/tx@^5.4.0":
   version "5.4.0"
-  resolved "https://registry.npmjs.org/@ethereumjs/tx/-/tx-5.4.0.tgz#6f47894cc3e2d4e63d87c62b41ed7e8180a1de58"
+  resolved "https://registry.yarnpkg.com/@ethereumjs/tx/-/tx-5.4.0.tgz#6f47894cc3e2d4e63d87c62b41ed7e8180a1de58"
   integrity sha512-SCHnK7m/AouZ7nyoR0MEXw1OO/tQojSbp88t8oxhwes5iZkZCtfFdUrJaiIb72qIpH2FVw6s1k1uP7LXuH7PsA==
   dependencies:
     "@ethereumjs/common" "^4.4.0"
@@ -2529,6 +2529,16 @@
   dependencies:
     "@injectivelabs/grpc-web" "^0.0.1"
     "@injectivelabs/ts-types" "^1.14.40"
+    http-status-codes "^2.2.0"
+    shx "^0.3.2"
+
+"@injectivelabs/exceptions@^1.14.34-beta.5", "@injectivelabs/exceptions@^1.14.41":
+  version "1.14.41"
+  resolved "https://registry.yarnpkg.com/@injectivelabs/exceptions/-/exceptions-1.14.41.tgz#fc8ba14646e92f80f50cda213855e0d9ecf210c0"
+  integrity sha512-tY2s6ivb2qgQO4lrsLd3aT7q7Hrn8uPVeN8Vc25FAWwlBmwm7okkLWLGI1jnO8v3oe99OO3be+rvTa/TexN5+g==
+  dependencies:
+    "@injectivelabs/grpc-web" "^0.0.1"
+    "@injectivelabs/ts-types" "^1.14.41"
     http-status-codes "^2.2.0"
     shx "^0.3.2"
 
@@ -9346,6 +9356,11 @@ graphql@^16.10.0:
   resolved "https://registry.yarnpkg.com/graphql/-/graphql-16.10.0.tgz#24c01ae0af6b11ea87bf55694429198aaa8e220c"
   integrity sha512-AjqGKbDGUFRKIRCP9tCKiIGHyriz2oHEbPIbEtcSLSs4YjReZOIPQQWek4+6hjw62H9QShXHyaGivGiYVLeYFQ==
 
+grpc-web@^1.5.0:
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/grpc-web/-/grpc-web-1.5.0.tgz#154e4007ab59a94bf7726b87ef6c5bd8815ecf6e"
+  integrity sha512-y1tS3BBIoiVSzKTDF3Hm7E8hV2n7YY7pO0Uo7depfWJqKzWE+SKr0jvHNIJsJJYILQlpYShpi/DRJJMbosgDMQ==
+
 h3@^1.10.2, h3@^1.8.2:
   version "1.11.1"
   resolved "https://registry.npmjs.org/h3/-/h3-1.11.1.tgz#e9414ae6f2a076a345ea07256b320edb29bab9f7"
@@ -11281,7 +11296,7 @@ libsodium-wrappers@^0.7.6:
 
 libsodium@^0.7.15:
   version "0.7.15"
-  resolved "https://registry.npmjs.org/libsodium/-/libsodium-0.7.15.tgz#ac284e3dcb1c29ae9526c5581cdada6a072f6d20"
+  resolved "https://registry.yarnpkg.com/libsodium/-/libsodium-0.7.15.tgz#ac284e3dcb1c29ae9526c5581cdada6a072f6d20"
   integrity sha512-sZwRknt/tUpE2AwzHq3jEyUU5uvIZHtSssktXq7owd++3CSgn8RGrv6UZJJBpP7+iBghBqe7Z06/2M31rI2NKw==
 
 lie@3.1.1:
