@@ -139,6 +139,7 @@
     "@noble/hashes": "^1.7.1",
     "axios": "^1.8.1",
     "bech32": "^2.0.0",
+    "grpc-web": "^1.5.0",
     "bip39": "^3.1.0",
     "cosmjs-types": "^0.9.0",
     "crypto-js": "^4.2.0",

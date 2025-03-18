@@ -1,16 +1,22 @@
+import { GeneralException } from '@injectivelabs/exceptions'
+import { InjectiveDerivativeExchangeRpc } from '@injectivelabs/indexer-proto-ts'
+import {
+  OrderSide,
+  OrderState,
+  PaginationOption,
+} from '@injectivelabs/ts-types'
+import { Status } from 'grpc-web'
+import { Subscription } from 'rxjs'
 import {
   TradeDirection,
   TradeExecutionSide,
   TradeExecutionType,
 } from '../../../types/index.js'
-import { StreamStatusResponse } from '../types/index.js'
-import { PaginationOption } from '../../../types/pagination.js'
-import { OrderSide, OrderState } from '@injectivelabs/ts-types'
-import { IndexerDerivativeStreamTransformer } from '../transformers/index.js'
 import { getGrpcIndexerWebImpl } from '../../base/BaseIndexerGrpcWebConsumer.js'
-import { Subscription } from 'rxjs'
-import { InjectiveDerivativeExchangeRpc } from '@injectivelabs/indexer-proto-ts'
-import { GeneralException } from '@injectivelabs/exceptions'
+import { InjectiveDerivativeExchangeRPCClient } from '../../proto/indexer/Injective_derivative_exchange_rpcServiceClientPb.js'
+import * as injectiveExchangePB from '../../proto/indexer/injective_derivative_exchange_rpc_pb.js'
+import { IndexerDerivativeStreamTransformer } from '../transformers/index.js'
+import { StreamStatusResponse } from '../types/index.js'
 
 export type DerivativeOrderbookV2StreamCallback = (
   response: ReturnType<
@@ -63,12 +69,14 @@ export type MarketStreamCallback = (
  */
 export class IndexerGrpcDerivativesStream {
   protected client: InjectiveDerivativeExchangeRpc.InjectiveDerivativeExchangeRPCClientImpl
+  protected webClient: InjectiveDerivativeExchangeRPCClient
 
   constructor(endpoint: string) {
     this.client =
       new InjectiveDerivativeExchangeRpc.InjectiveDerivativeExchangeRPCClientImpl(
         getGrpcIndexerWebImpl(endpoint),
       )
+    this.webClient = new InjectiveDerivativeExchangeRPCClient(endpoint)
   }
 
   /** @deprecated - use streamDerivativeOrderbookV2 */
@@ -422,34 +430,48 @@ export class IndexerGrpcDerivativesStream {
     onEndCallback?: (status?: StreamStatusResponse) => void
     onStatusCallback?: (status: StreamStatusResponse) => void
   }) {
-    const request =
-      InjectiveDerivativeExchangeRpc.StreamOrderbookUpdateRequest.create()
+    const request = new injectiveExchangePB.StreamOrderbookUpdateRequest()
 
-    request.marketIds = marketIds
+    request.setMarketIdsList(marketIds)
 
-    const subscription = this.client.StreamOrderbookUpdate(request).subscribe({
-      next(
-        response: InjectiveDerivativeExchangeRpc.StreamOrderbookUpdateResponse,
-      ) {
-        callback(
-          IndexerDerivativeStreamTransformer.orderbookUpdateStreamCallback(
-            response,
-          ),
-        )
-      },
-      error(err) {
-        if (onStatusCallback) {
-          onStatusCallback(err)
-        }
-      },
-      complete() {
-        if (onEndCallback) {
-          onEndCallback()
-        }
-      },
-    })
+    const subscription = this.webClient.streamOrderbookUpdate(request)
 
-    return subscription as unknown as Subscription
+    function onDataCallbackFn(
+      response: injectiveExchangePB.StreamOrderbookUpdateResponse,
+    ) {
+      callback(
+        IndexerDerivativeStreamTransformer.web_orderbookUpdateStreamCallback(
+          response,
+        ),
+      )
+    }
+
+    subscription.on('data', onDataCallbackFn)
+
+    function onStatusCallbackFn(status: Status) {
+      if (onStatusCallback) {
+        onStatusCallback(status as StreamStatusResponse)
+      }
+    }
+    subscription.on('status', onStatusCallbackFn)
+
+    function onEndCallbackFn() {
+      if (onEndCallback) {
+        onEndCallback()
+      }
+    }
+    subscription.on('end', onEndCallbackFn)
+
+    return {
+      ...subscription,
+      unsubscribe: () => {
+        subscription.removeListener('data', onDataCallbackFn)
+        subscription.removeListener('status', onStatusCallbackFn)
+        subscription.removeListener('end', onEndCallbackFn)
+        subscription.cancel()
+      },
+      //! This is an incorrect casting, but here for now for backwards compat during testing
+    } as unknown as Subscription
   }
 
   streamDerivativePositionsV2({

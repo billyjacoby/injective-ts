@@ -1,6 +1,7 @@
-import { StreamOperation } from '../../../types/index.js'
-import { IndexerGrpcDerivativeTransformer } from './IndexerGrpcDerivativeTransformer.js'
 import { InjectiveDerivativeExchangeRpc } from '@injectivelabs/indexer-proto-ts'
+import { StreamOperation } from '../../../types/index.js'
+import * as injectiveExchangePB from '../../proto/indexer/injective_derivative_exchange_rpc_pb.js'
+import { IndexerGrpcDerivativeTransformer } from './IndexerGrpcDerivativeTransformer.js'
 
 /**
  * @category Indexer Stream Transformer
@@ -96,6 +97,32 @@ export class IndexerDerivativeStreamTransformer {
       operation: response.operationType as StreamOperation,
       marketId: response.marketId,
       timestamp: response.timestamp,
+    }
+  }
+
+  static web_orderbookUpdateStreamCallback = (
+    _response: injectiveExchangePB.StreamOrderbookUpdateResponse,
+  ) => {
+    const response = _response.toObject()
+    const orderbook = response.orderbookLevelUpdates
+
+    return {
+      orderbook: orderbook
+        ? IndexerGrpcDerivativeTransformer.grpcOrderbookV2ToOrderbookV2({
+            sequence: orderbook.sequence,
+            buys: orderbook.buysList.map((b) => ({
+              ...b,
+              timestamp: b.timestamp.toString(),
+            })),
+            sells: orderbook.sellsList.map((s) => ({
+              ...s,
+              timestamp: s.timestamp.toString(),
+            })),
+          })
+        : undefined,
+      operation: response.operationType as StreamOperation,
+      marketId: response.marketId,
+      timestamp: response.timestamp.toString(),
     }
   }
 
