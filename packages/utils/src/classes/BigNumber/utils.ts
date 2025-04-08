@@ -1,4 +1,4 @@
-import { BigNumber } from 'bignumber.js'
+import BigNumber from 'bignumber.js'
 
 export const bigNumberBaseToWei = <T extends string | number | BigNumber, P>(
   value: T,

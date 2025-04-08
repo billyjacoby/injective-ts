@@ -58,7 +58,7 @@ export default class MsgMigrateContract extends MsgBase<
     const proto = this.toProto()
 
     const message = {
-      ...snakecaseKeys(proto),
+      ...snakecaseKeys(Object(proto)),
       msg: params.msg,
     }
 
