@@ -429,7 +429,9 @@ export class BaseTurnkeyWalletStrategy
         )
       }
 
-      this.turnkeyWallet = new TurnkeyWallet(metadata.turnkey)
+      this.turnkeyWallet = new TurnkeyWallet(
+        metadata.turnkey as TurnkeyMetadata,
+      )
     }
 
     return this.turnkeyWallet
