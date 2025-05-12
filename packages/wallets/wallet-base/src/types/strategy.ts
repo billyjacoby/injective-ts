@@ -89,7 +89,7 @@ export interface TurnkeyMetadata {
 
 export interface WalletMetadata {
   magic?: MagicMetadata
-  turnkey?: TurnkeyMetadata
+  turnkey?: Partial<TurnkeyMetadata>
   walletConnect?: WalletConnectMetadata
   privateKey?: PrivateKeyMetadata
 }
