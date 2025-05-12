@@ -1,6 +1,5 @@
 import {
   ChainId,
-  CosmosChainId,
   AccountAddress,
   EthereumChainId,
 } from '@injectivelabs/ts-types'
@@ -30,10 +29,13 @@ export type MagicMetadata = {
   rpcEndpoint?: string
 }
 
-export type WalletConnectMetadata = Record<
-  string,
-  string | Record<string, string> | Record<string, string[]>
->
+export type PrivateKeyMetadata = {
+  privateKey: string
+}
+
+export type WalletConnectMetadata = {
+  projectId?: string
+}
 
 export interface WalletStrategyEthereumOptions {
   ethereumChainId: EthereumChainId
@@ -51,20 +53,55 @@ export interface SendTransactionOptions {
   }
 }
 
-export interface ConcreteWalletStrategyOptions {
-  privateKey?: string
-  metadata?: Record<string, string | Record<string, string>>
+export enum TurnkeyProvider {
+  Email = 'email',
+  Google = 'google',
+  Apple = 'apple',
+}
+
+export type TurnkeySession = {
+  sessionType: any
+  userId: string
+  organizationId: string
+  expiry: number
+  token: string
+}
+
+export interface TurnkeyMetadata {
+  defaultOrganizationId: string
+  apiBaseUrl: string
+  apiServerEndpoint: string
+  iframeUrl?: string
+  email?: string
+  session?: TurnkeySession
+  otpId?: string
+  otpCode?: string
+  oidcToken?: string
+  iframeElementId?: string
+  iframeContainerId: string
+  credentialBundle?: string
+  organizationId?: string
+  provider?: TurnkeyProvider
+  otpInitPath?: string
+  otpVerifyPath?: string
+  oauthLoginPath?: string
+}
+
+export interface WalletMetadata {
+  magic?: MagicMetadata
+  turnkey?: TurnkeyMetadata
+  walletConnect?: WalletConnectMetadata
+  privateKey?: PrivateKeyMetadata
 }
 
 export interface ConcreteWalletStrategyArgs {
   chainId: ChainId
-  options?: ConcreteWalletStrategyOptions
+  metadata?: WalletMetadata
 }
 
-export interface ConcreteCosmosWalletStrategyArgs {
-  chainId: CosmosChainId | ChainId
+export interface ConcreteCosmosWalletStrategyArgs
+  extends ConcreteWalletStrategyArgs {
   wallet?: Wallet
-  options?: ConcreteWalletStrategyOptions
 }
 
 export interface ConcreteEthereumWalletStrategyArgs
@@ -73,6 +110,9 @@ export interface ConcreteEthereumWalletStrategyArgs
 }
 
 export interface ConcreteCosmosWalletStrategy {
+  metadata?: WalletMetadata
+
+  setMetadata?(metadata?: WalletMetadata): void
   /**
    * The accounts from the wallet (addresses)
    */
@@ -125,7 +165,7 @@ export type ConcreteStrategiesArg = {
 
 export interface WalletStrategyArguments {
   chainId: ChainId
-  options?: ConcreteWalletStrategyOptions
+  metadata?: WalletMetadata
   ethereumOptions?: WalletStrategyEthereumOptions
   disabledWallets?: Wallet[]
   wallet?: Wallet
@@ -135,9 +175,7 @@ export interface WalletStrategyArguments {
 export interface ConcreteWalletStrategy
   extends Omit<
     ConcreteCosmosWalletStrategy,
-    | 'sendTransaction'
-    | 'isChainIdSupported'
-    | 'signAminoTransaction'
+    'sendTransaction' | 'isChainIdSupported' | 'signAminoTransaction'
   > {
   /**
    * Sends Cosmos transaction. Returns a transaction hash
@@ -224,10 +262,11 @@ export interface WalletStrategy {
   strategies: ConcreteStrategiesArg
   wallet: Wallet
   args: WalletStrategyArguments
+  metadata?: WalletMetadata
 
   getWallet(): Wallet
   setWallet(wallet: Wallet): void
-  setOptions(options?: ConcreteWalletStrategyOptions): void
+  setMetadata(metadata?: WalletMetadata): void
   getStrategy(): ConcreteWalletStrategy
   getAddresses(args?: unknown): Promise<AccountAddress[]>
   getWalletDeviceType(): Promise<WalletDeviceType>
@@ -269,4 +308,4 @@ export interface WalletStrategy {
   getCosmosWallet?(chainId: ChainId): CosmosWalletAbstraction
 }
 
-export { StdSignDoc}
+export { StdSignDoc }
