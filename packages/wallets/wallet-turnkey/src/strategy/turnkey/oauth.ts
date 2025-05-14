@@ -21,8 +21,8 @@ export class TurnkeyOauthWallet {
       return Array.from(sha256(new TextEncoder().encode(targetPublicKey)))
         .map((b) => b.toString(16).padStart(2, '0'))
         .join('')
-    } catch (e) {
-      throw new WalletException(new Error((e as any).message), {
+    } catch (e: any) {
+      throw new WalletException(new Error(e.message), {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
         contextModule: 'turnkey-generate-oauth-nonce',
@@ -31,13 +31,15 @@ export class TurnkeyOauthWallet {
   }
 
   static async oauthLogin(args: {
-    client: HttpRestClient
     oidcToken: string
-    providerName: 'google' | 'apple'
-    expirationSeconds?: number
-    iframeClient: TurnkeyIframeClient
+    client: HttpRestClient
     oauthLoginPath?: string
-  }): Promise<{ credentialBundle: string } | undefined> {
+    expirationSeconds?: number
+    providerName: 'google' | 'apple'
+    iframeClient: TurnkeyIframeClient
+  }): Promise<
+    { organizationId: string; credentialBundle: string } | undefined
+  > {
     const { client, iframeClient } = args
 
     const path = args.oauthLoginPath || TURNKEY_OAUTH_PATH
@@ -59,8 +61,8 @@ export class TurnkeyOauthWallet {
       })
 
       return response.data
-    } catch (e) {
-      throw new WalletException(new Error((e as any).message), {
+    } catch (e: any) {
+      throw new WalletException(new Error(e.message), {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
         contextModule: 'turnkey-oauth-login',

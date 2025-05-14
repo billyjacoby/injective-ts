@@ -120,7 +120,6 @@ export class BaseTurnkeyWalletStrategy
     const organizationId = await this.getOrganizationId()
 
     // CHeck if the user is already connected
-
     const session = await turnkeyWallet.getSession()
 
     if (!session.session) {
@@ -136,11 +135,11 @@ export class BaseTurnkeyWalletStrategy
         }
 
         const result = await TurnkeyOtpWallet.confirmEmailOTP({
-          client: this.client,
           iframeClient,
+          organizationId,
+          client: this.client,
           otpCode: this.metadata?.turnkey?.otpCode,
           emailOTPId: this.metadata?.turnkey?.otpId,
-          organizationId,
         })
 
         if (result?.credentialBundle) {
@@ -158,7 +157,9 @@ export class BaseTurnkeyWalletStrategy
           oidcToken: this.metadata?.turnkey?.oidcToken,
           providerName: this.turnkeyProvider.toString() as 'google' | 'apple',
         })
+
         if (result?.credentialBundle) {
+          this.metadata.turnkey.organizationId = result.organizationId
           this.metadata.turnkey.credentialBundle = result.credentialBundle
           await turnkeyWallet.injectAndRefresh(result.credentialBundle)
         }
@@ -166,15 +167,15 @@ export class BaseTurnkeyWalletStrategy
     }
 
     try {
-      return await turnkeyWallet.getAccounts(organizationId)
-    } catch (e: unknown) {
-      if ((e as any).contextCode === TurnkeyErrorCodes.UserLoggedOut) {
+      return await turnkeyWallet.getAccounts()
+    } catch (e: any) {
+      if (e.contextCode === TurnkeyErrorCodes.UserLoggedOut) {
         await this.disconnect()
 
         throw e
       }
 
-      throw new WalletException(new Error((e as any).message), {
+      throw new WalletException(new Error(e.message), {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
         contextModule: WalletAction.GetAccounts,

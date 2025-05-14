@@ -15,10 +15,10 @@ export class TurnkeyOtpWallet {
   static async initEmailOTP(args: {
     email: string
     subOrgId?: string
+    otpInitPath?: string
     client: HttpRestClient
     iframeClient: TurnkeyIframeClient
     invalidateExistingSessions?: boolean
-    otpInitPath?: string
   }) {
     const { client, iframeClient } = args
 
@@ -40,8 +40,8 @@ export class TurnkeyOtpWallet {
       })
 
       return response?.data
-    } catch (e) {
-      throw new WalletException(new Error((e as any).message), {
+    } catch (e: any) {
+      throw new WalletException(new Error(e.message), {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
         contextModule: 'turnkey-init-email-otp',
@@ -80,15 +80,15 @@ export class TurnkeyOtpWallet {
       const response = await client.post<{
         data?: TurnkeyConfirmEmailOTPResponse
       }>(otpVerifyPath, {
+        targetPublicKey,
         otpId: emailOTPId,
         otpCode: args.otpCode,
         suborgID: organizationId,
-        targetPublicKey,
       })
 
       return response?.data
-    } catch (e) {
-      throw new WalletException(new Error((e as any).message), {
+    } catch (e: any) {
+      throw new WalletException(new Error(e.message), {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
         contextModule: 'turnkey-confirm-email-otp',
@@ -99,11 +99,11 @@ export class TurnkeyOtpWallet {
   // TODO: should be able to remove this
 
   static async loginUser(args: {
-    client: HttpRestClient
-    iframeClient: TurnkeyIframeClient
-    organizationId: string
     otpCode: string
     emailOTPId: string
+    client: HttpRestClient
+    organizationId: string
+    iframeClient: TurnkeyIframeClient
     setMetadata: (metadata: { turnkey: { credentialBundle: string } }) => void
   }) {
     const {
@@ -117,9 +117,9 @@ export class TurnkeyOtpWallet {
 
     const result = await TurnkeyOtpWallet.confirmEmailOTP({
       client,
-      iframeClient,
       otpCode,
       emailOTPId,
+      iframeClient,
       organizationId,
     })
 

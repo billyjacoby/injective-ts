@@ -26,6 +26,7 @@ export type TurnkeyConfirmEmailOTPResponse = {
 }
 
 export type TurnkeyOauthLoginResponse = {
+  organizationId: string
   credentialBundle: string
   message: string
 }

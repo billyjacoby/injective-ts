@@ -113,8 +113,8 @@ export class TurnkeyWallet {
         session,
         organizationId: actualOrganizationId,
       }
-    } catch (e) {
-      throw new WalletException(new Error((e as any).message), {
+    } catch (e: any) {
+      throw new WalletException(new Error(e.message), {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
         contextModule: 'turnkey-wallet-get-session',
@@ -122,22 +122,27 @@ export class TurnkeyWallet {
     }
   }
 
-  public async getAccounts(organizationId: string) {
+  public async getAccounts() {
     const iframeClient = await this.getIframeClient()
+
+    if (!this.metadata.organizationId) {
+      return []
+    }
 
     try {
       const response = await iframeClient.getWallets({
-        organizationId,
+        organizationId: this.metadata.organizationId,
       })
 
       const accounts = await Promise.allSettled(
         response.wallets.map((wallet) =>
           iframeClient.getWalletAccounts({
-            organizationId,
             walletId: wallet.walletId,
+            organizationId: this.metadata.organizationId,
           }),
         ),
       )
+
       const filteredAccounts = accounts
         .filter((account) => account.status === 'fulfilled')
         .flatMap((result) => result.value?.accounts)
@@ -151,8 +156,8 @@ export class TurnkeyWallet {
       return filteredAccounts.map((account) =>
         getInjectiveAddress(account.address),
       )
-    } catch (e) {
-      if ((e as any).code === TurnkeyErrorCodes.UserLoggedOut) {
+    } catch (e: any) {
+      if (e.code === TurnkeyErrorCodes.UserLoggedOut) {
         throw new WalletException(new Error('User is not logged in'), {
           code: UnspecifiedErrorCode,
           type: ErrorType.WalletError,
@@ -161,7 +166,7 @@ export class TurnkeyWallet {
         })
       }
 
-      throw new WalletException(new Error((e as any).message), {
+      throw new WalletException(new Error(e.message), {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
         contextModule: 'turnkey-wallet-get-accounts',
