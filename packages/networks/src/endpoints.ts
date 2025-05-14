@@ -53,6 +53,7 @@ export const endpointsTestnetSentry: NetworkEndpoints = {
   cacheGrpc: 'https://testnet.sentry.chain.grpc-web.injective.network',
   cacheRest: 'https://testnet.sentry.exchange.grpc-web.injective.network',
   web3gw: 'https://testnet.sentry.exchange.grpc-web.injective.network',
+  chart: 'https://k8s.testnet.chart.grpc-web.injective.network',
 }
 
 export const endpointsTestnet: NetworkEndpoints = {
@@ -69,6 +70,7 @@ export const endpointsDevnet: NetworkEndpoints = {
   cacheGrpc: 'https://devnet.grpc.injective.dev',
   cacheRest: 'https://devnet.api.injective.dev',
   web3gw: 'https://devnet.api.injective.dev',
+  chart: 'https://devnet.api.injective.dev',
 }
 
 export const endpointsDevnet1: NetworkEndpoints = {
@@ -81,6 +83,7 @@ export const endpointsDevnet1: NetworkEndpoints = {
   cacheGrpc: 'https://devnet-1.grpc.injective.dev',
   cacheRest: 'https://devnet-1.api.injective.dev',
   web3gw: 'https://devnet-1.api.injective.dev',
+  chart: 'https://devnet-1.api.injective.dev',
 }
 
 export const endpointsDevnet2: NetworkEndpoints = {
@@ -93,6 +96,7 @@ export const endpointsDevnet2: NetworkEndpoints = {
   cacheGrpc: 'https://devnet-2.grpc.injective.dev',
   cacheRest: 'https://devnet-2.api.injective.dev',
   web3gw: 'https://devnet-2.api.injective.dev',
+  chart: 'https://devnet-2.api.injective.dev',
 }
 
 export const endpointsDevnet3: NetworkEndpoints = {
@@ -105,6 +109,7 @@ export const endpointsDevnet3: NetworkEndpoints = {
   cacheGrpc: 'https://devnet-3.grpc.injective.dev',
   cacheRest: 'https://devnet-3.api.injective.dev',
   web3gw: 'https://devnet-3.api.injective.dev',
+  chart: 'https://devnet-3.api.injective.dev',
 }
 
 export const endpointsLocal: NetworkEndpoints = {

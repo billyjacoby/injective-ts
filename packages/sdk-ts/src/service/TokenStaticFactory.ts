@@ -63,12 +63,6 @@ export class TokenStaticFactory {
         tokenVerification,
       } = token
 
-      const existingToken = this.toToken(denom)
-
-      if (existingToken) {
-        continue
-      }
-
       if (tokenVerification === TokenVerification.Verified) {
         this.denomVerifiedMap[denom] = token
         this.symbolTokensMap[symbol.toLowerCase()] = token
