@@ -85,6 +85,8 @@ export interface TurnkeyMetadata {
   otpInitPath?: string
   otpVerifyPath?: string
   oauthLoginPath?: string
+  googleClientId?: string
+  googleRedirectUri?: string
 }
 
 export interface WalletMetadata {

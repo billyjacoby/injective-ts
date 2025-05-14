@@ -33,8 +33,7 @@ import { TurnkeyOauthWallet } from '../turnkey/oauth.js'
 import { SessionType } from '@turnkey/sdk-browser'
 import { TurnkeyIframeClient } from '@turnkey/sdk-browser'
 import { getAddress } from 'viem'
-
-const DEFAULT_TURNKEY_API_ENDPOINT = 'https://api.ui.injective.network/api/v1'
+import { generateGoogleUrl } from '../../utils.js'
 
 export class BaseTurnkeyWalletStrategy
   extends BaseConcreteStrategy
@@ -55,9 +54,15 @@ export class BaseTurnkeyWalletStrategy
     super(args)
 
     this.turnkeyProvider = args.provider
-    this.client = new HttpRestClient(
-      args.apiServerEndpoint || DEFAULT_TURNKEY_API_ENDPOINT,
-    )
+
+    const endpoint =
+      args.apiServerEndpoint || this.metadata?.turnkey?.apiServerEndpoint
+
+    if (!endpoint) {
+      throw new WalletException(new Error('apiServerEndpoint is required'))
+    }
+
+    this.client = new HttpRestClient(endpoint)
   }
 
   async getWalletDeviceType(): Promise<WalletDeviceType> {
@@ -253,7 +258,26 @@ export class BaseTurnkeyWalletStrategy
 
         throw new WalletException(new Error('Oauth result not found'))
       } else {
-        return await TurnkeyOauthWallet.generateOAuthNonce(iframeClient)
+        const nonce = await TurnkeyOauthWallet.generateOAuthNonce(iframeClient)
+
+        if (
+          !metadata?.turnkey?.googleClientId ||
+          !metadata?.turnkey?.googleRedirectUri
+        ) {
+          throw new WalletException(
+            new Error('googleClientId and googleRedirectUri are required'),
+          )
+        }
+
+        if (turnkeyProvider === TurnkeyProvider.Google) {
+          return generateGoogleUrl({
+            nonce,
+            clientId: metadata.turnkey.googleClientId,
+            redirectUri: metadata.turnkey.googleRedirectUri,
+          })
+        }
+        //? When we add Apple support, we might also want to return the URL as well
+        return nonce
       }
     }
 
