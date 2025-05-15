@@ -69,30 +69,4 @@ export class TurnkeyOauthWallet {
       })
     }
   }
-
-  // TODO: should be able to remove this
-  static async loginUser(args: {
-    iframeClient: TurnkeyIframeClient
-    client: HttpRestClient
-    oidcToken: string
-    providerName: 'google' | 'apple'
-    setMetadata: (metadata: { turnkey: { credentialBundle: string } }) => void
-  }) {
-    const { client, iframeClient, oidcToken, providerName } = args
-    const result = await TurnkeyOauthWallet.oauthLogin({
-      client,
-      iframeClient,
-      oidcToken,
-      providerName,
-    })
-
-    if (result?.credentialBundle) {
-      args.setMetadata({
-        turnkey: {
-          credentialBundle: result.credentialBundle,
-        },
-      })
-      iframeClient.injectCredentialBundle(result.credentialBundle)
-    }
-  }
 }

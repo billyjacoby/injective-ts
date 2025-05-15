@@ -25,6 +25,10 @@ export class TurnkeyWallet {
     Awaited<ReturnType<typeof createAccount>>
   > = {}
 
+  public setMetadata(metadata: Partial<TurnkeyMetadata>) {
+    this.metadata = { ...this.metadata, ...metadata }
+  }
+
   constructor(metadata: TurnkeyMetadata) {
     this.metadata = metadata
 

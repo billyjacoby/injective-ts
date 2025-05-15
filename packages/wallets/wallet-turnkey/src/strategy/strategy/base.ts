@@ -81,6 +81,12 @@ export class BaseTurnkeyWalletStrategy
     }
   }
 
+  //? This is here specifically because we have to ensure we set the organizationId on TurnkeyWallet as well
+  private setOrganizationId(organizationId: string) {
+    this.setMetadata({ turnkey: { organizationId } })
+    this.turnkeyWallet?.setMetadata({ organizationId })
+  }
+
   async enable(): Promise<boolean> {
     const turnkeyWallet = await this.getTurnkeyWallet()
 
@@ -198,7 +204,7 @@ export class BaseTurnkeyWalletStrategy
       session.session?.token
     ) {
       await iframeClient.injectCredentialBundle(session.session?.token)
-      this.setMetadata({ turnkey: { organizationId: session.organizationId } })
+      this.setOrganizationId(session.organizationId)
 
       await iframeClient.refreshSession({
         sessionType: SessionType.READ_WRITE,
@@ -347,7 +353,21 @@ export class BaseTurnkeyWalletStrategy
       throw new WalletException(new Error('Turnkey account not found'))
     }
 
-    const signature = await account.signTypedData(JSON.parse(eip712json))
+    let parsedData
+    try {
+      parsedData = JSON.parse(eip712json)
+    } catch (e) {
+      throw new WalletException(
+        new Error('Failed to parse EIP-712 data: Invalid JSON format'),
+        {
+          code: UnspecifiedErrorCode,
+          type: ErrorType.WalletError,
+          contextModule: WalletAction.SignTransaction,
+        },
+      )
+    }
+
+    const signature = await account.signTypedData(parsedData)
 
     return signature
   }

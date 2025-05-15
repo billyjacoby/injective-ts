@@ -1,4 +1,4 @@
-import { SessionType, type TurnkeyIframeClient } from '@turnkey/sdk-browser'
+import { type TurnkeyIframeClient } from '@turnkey/sdk-browser'
 import {
   ErrorType,
   WalletException,
@@ -92,50 +92,6 @@ export class TurnkeyOtpWallet {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
         contextModule: 'turnkey-confirm-email-otp',
-      })
-    }
-  }
-
-  // TODO: should be able to remove this
-
-  static async loginUser(args: {
-    otpCode: string
-    emailOTPId: string
-    client: HttpRestClient
-    organizationId: string
-    iframeClient: TurnkeyIframeClient
-    setMetadata: (metadata: { turnkey: { credentialBundle: string } }) => void
-  }) {
-    const {
-      client,
-      iframeClient,
-      organizationId,
-      otpCode,
-      emailOTPId,
-      setMetadata,
-    } = args
-
-    const result = await TurnkeyOtpWallet.confirmEmailOTP({
-      client,
-      otpCode,
-      emailOTPId,
-      iframeClient,
-      organizationId,
-    })
-
-    if (result?.credentialBundle) {
-      setMetadata({
-        turnkey: {
-          credentialBundle: result.credentialBundle,
-        },
-      })
-
-      await iframeClient.injectCredentialBundle(result.credentialBundle)
-
-      await iframeClient.refreshSession({
-        sessionType: SessionType.READ_WRITE,
-        targetPublicKey: iframeClient.iframePublicKey,
-        expirationSeconds: '900',
       })
     }
   }
