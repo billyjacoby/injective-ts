@@ -38,10 +38,10 @@ const getContractTransactionV2Amount = (
   const messages = JSON.parse(
     Buffer.from(ApiTransaction.messages).toString('utf8'),
   )
-  const {
-    type,
-    message: { msg },
-  } = messages[0]
+
+  const { type, value } = messages[0]
+
+  const { msg } = value
 
   if (!type.includes('MsgExecuteContract')) {
     return ZERO_IN_BASE
@@ -60,14 +60,20 @@ const getContractTransactionV2Amount = (
   return new BigNumberInWei(msgObj.transfer.amount).toBase()
 }
 
-const transactionV2MessagesToMessages = (messages: any): Message[] =>
-  JSON.parse(Buffer.from(messages).toString('utf8')).map(
-    (msg: any) =>
-      ({
-        type: msg.type,
-        message: msg.value,
-      } as Message),
-  )
+const transactionV2MessagesToMessages = (messages: any): Message[] => {
+  try {
+    return JSON.parse(Buffer.from(messages).toString('utf8')).map(
+      (msg: any) =>
+        ({
+          type: msg.type,
+          message: msg.value,
+        } as Message),
+    )
+  } catch (error) {
+    console.error('Error parsing transaction messages:', error)
+    return [] // Return an empty array in case of error
+  }
+}
 /**
  * @category Indexer Grpc Transformer
  */
@@ -470,23 +476,63 @@ export class IndexerGrpcExplorerTransformer {
   static grpcTxV2ToTransaction(
     tx: InjectiveExplorerRpc.TxData,
   ): ExplorerTransaction {
+    let logs: any[] = []
+    try {
+      const rawLogs = Buffer.from(tx.logs).toString('utf8')
+
+      logs = JSON.parse(rawLogs || '[]')
+    } catch (e) {
+      console.error('Failed to parse logs')
+      logs = []
+    }
+
+    const txType = JSON.parse(Buffer.from(tx.txMsgTypes).toString('utf8'))
+
+    const signatures = tx.signatures.map((signature) => ({
+      address: signature.address,
+      pubkey: signature.pubkey,
+      signature: signature.signature,
+      sequence: (() => {
+        try {
+          return parseInt(signature.sequence, 10)
+        } catch (e) {
+          console.error('Failed to parse signature sequence:', e)
+          return 0
+        }
+      })(),
+    }))
+
+    const claimIds = tx.claimIds.map((claimId) => {
+      try {
+        return parseInt(claimId, 10)
+      } catch (e) {
+        console.error('Failed to parse claimId:', e)
+        return 0
+      }
+    })
+
+    let messages: Message[] = []
+    try {
+      messages = transactionV2MessagesToMessages(tx.messages)
+    } catch (e) {
+      console.error('Failed to parse messages:', e)
+      messages = []
+    }
+
+    const blockNumber = parseInt(tx.blockNumber)
+
     return {
       id: tx.id,
-      logs: JSON.parse(Buffer.from(tx.logs).toString('utf8')),
+      logs,
       code: tx.code,
       hash: tx.hash,
-      claimIds: tx.claimIds.map((claimId) => parseInt(claimId, 10)),
+      claimIds,
       errorLog: tx.errorLog,
-      messages: transactionV2MessagesToMessages(tx.messages),
+      messages,
       codespace: tx.codespace,
-      txType: JSON.parse(Buffer.from(tx.txMsgTypes).toString('utf8')),
-      signatures: tx.signatures.map((signature) => ({
-        address: signature.address,
-        pubkey: signature.pubkey,
-        signature: signature.signature,
-        sequence: parseInt(signature.sequence, 10),
-      })),
-      blockNumber: parseInt(tx.blockNumber),
+      txType,
+      signatures,
+      blockNumber,
       blockTimestamp: tx.blockTimestamp,
       gasFee: { amounts: [], gasLimit: 0, granter: '', payer: '' },
       info: '',

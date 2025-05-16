@@ -242,10 +242,11 @@ describe('IndexerGrpcExplorerApi', () => {
     }
   })
 
-  test('fetchTxsV2', async () => {
+  test.only('fetchTxsV2', async () => {
     try {
       const response = await indexerGrpcExplorerApi.fetchTxsV2({
         perPage: 10,
+        type: 'cosmos.gov.v1beta1.MsgVote,cosmos.gov.v1.MsgVote',
       })
 
       const { data: txs } = response
@@ -292,7 +293,7 @@ describe('IndexerGrpcExplorerApi', () => {
     }
   })
 
-  test.only('fetchContractTxsV2', async () => {
+  test('fetchContractTxsV2', async () => {
     try {
       const response = await indexerGrpcExplorerApi.fetchContractTxsV2({
         contractAddress: 'inj1qk00h5atutpsv900x202pxx42npjr9thrzhgxn',
