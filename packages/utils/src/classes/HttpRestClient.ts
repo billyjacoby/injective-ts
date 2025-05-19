@@ -13,7 +13,9 @@ const getErrorMessage = (error: any, endpoint: string): string => {
   }
 
   return error.response.data
-    ? error.response.data.message || error.response.data
+    ? error.response.data.message ||
+        error.response.data.statusMessage ||
+        error.response.data
     : error.response.statusText
 }
 

@@ -1,0 +1,275 @@
+import { Turnkey, SessionType, TurnkeyIframeClient } from '@turnkey/sdk-browser'
+import {
+  ErrorType,
+  WalletException,
+  GeneralException,
+  UnspecifiedErrorCode,
+} from '@injectivelabs/exceptions'
+import { WalletAction, TurnkeyMetadata } from '@injectivelabs/wallet-base'
+import { getInjectiveAddress } from '@injectivelabs/sdk-ts'
+import { HttpRestClient } from '@injectivelabs/utils'
+import { createAccount } from '@turnkey/viem'
+import { TurnkeyErrorCodes } from '../types.js'
+
+export class TurnkeyWallet {
+  protected iframeClient: TurnkeyIframeClient | undefined
+
+  protected turnkey: Turnkey | undefined
+
+  protected client: HttpRestClient
+
+  private metadata: TurnkeyMetadata
+
+  private accountMap: Record<
+    string,
+    Awaited<ReturnType<typeof createAccount>>
+  > = {}
+
+  public setMetadata(metadata: Partial<TurnkeyMetadata>) {
+    this.metadata = { ...this.metadata, ...metadata }
+  }
+
+  constructor(metadata: TurnkeyMetadata) {
+    this.metadata = metadata
+
+    this.client = new HttpRestClient(metadata.apiServerEndpoint)
+  }
+
+  public static async getTurnkeyInstance(metadata: TurnkeyMetadata) {
+    const { turnkey, iframeClient } = await createTurnkeyIFrame(metadata)
+
+    return {
+      turnkey,
+      iframeClient,
+    }
+  }
+
+  public async getTurnkey(): Promise<Turnkey> {
+    if (!this.iframeClient) {
+      await this.initFrame()
+    }
+
+    if (!this.turnkey) {
+      this.turnkey = new Turnkey(this.metadata)
+    }
+
+    return this.turnkey as Turnkey
+  }
+
+  public async getIframeClient(): Promise<TurnkeyIframeClient> {
+    if (!this.iframeClient) {
+      await this.initFrame()
+    }
+
+    if (!this.iframeClient) {
+      throw new WalletException(new Error('Iframe client not initialized'))
+    }
+
+    return this.iframeClient as TurnkeyIframeClient
+  }
+
+  public async getSession(existingCredentialBundle?: string) {
+    const { metadata } = this
+
+    const iframeClient = await this.getIframeClient()
+    const turnkey = await this.getTurnkey()
+
+    const currentSession = await turnkey.getSession()
+    const organizationId =
+      currentSession?.organizationId || metadata.defaultOrganizationId
+    const credentialBundle = existingCredentialBundle || currentSession?.token
+
+    if (!credentialBundle) {
+      return {
+        session: undefined,
+        organizationId,
+      }
+    }
+
+    try {
+      const loginResult = await iframeClient.injectCredentialBundle(
+        credentialBundle,
+      )
+
+      // If there is no session, we want to force a refresh to enable to browser SDK to handle key storage and proper session management.
+      await iframeClient.refreshSession({
+        sessionType: SessionType.READ_WRITE,
+        targetPublicKey: iframeClient.iframePublicKey,
+        expirationSeconds: '900',
+      })
+
+      const [session, user] = await Promise.all([
+        turnkey.getSession(),
+        iframeClient.getWhoami(),
+      ])
+
+      const actualOrganizationId =
+        user?.organizationId || session?.organizationId || organizationId
+
+      if (!loginResult) {
+        return {
+          session: undefined,
+          organizationId: actualOrganizationId,
+        }
+      }
+
+      return {
+        session,
+        organizationId: actualOrganizationId,
+      }
+    } catch (e: any) {
+      throw new WalletException(new Error(e.message), {
+        code: UnspecifiedErrorCode,
+        type: ErrorType.WalletError,
+        contextModule: 'turnkey-wallet-get-session',
+      })
+    }
+  }
+
+  public async getAccounts() {
+    const iframeClient = await this.getIframeClient()
+
+    if (!this.metadata.organizationId) {
+      return []
+    }
+
+    try {
+      const response = await iframeClient.getWallets({
+        organizationId: this.metadata.organizationId,
+      })
+
+      const accounts = await Promise.allSettled(
+        response.wallets.map((wallet) =>
+          iframeClient.getWalletAccounts({
+            walletId: wallet.walletId,
+            organizationId: this.metadata.organizationId,
+          }),
+        ),
+      )
+
+      const filteredAccounts = accounts
+        .filter((account) => account.status === 'fulfilled')
+        .flatMap((result) => result.value?.accounts)
+        .filter(
+          (wa): wa is NonNullable<typeof wa> =>
+            !!wa &&
+            wa.addressFormat === 'ADDRESS_FORMAT_ETHEREUM' &&
+            !!wa.address,
+        )
+
+      return filteredAccounts.map((account) =>
+        getInjectiveAddress(account.address),
+      )
+    } catch (e: any) {
+      if (e.code === TurnkeyErrorCodes.UserLoggedOut) {
+        throw new WalletException(new Error('User is not logged in'), {
+          code: UnspecifiedErrorCode,
+          type: ErrorType.WalletError,
+          contextModule: WalletAction.GetAccounts,
+          contextCode: TurnkeyErrorCodes.UserLoggedOut,
+        })
+      }
+
+      throw new WalletException(new Error(e.message), {
+        code: UnspecifiedErrorCode,
+        type: ErrorType.WalletError,
+        contextModule: 'turnkey-wallet-get-accounts',
+      })
+    }
+  }
+
+  public async getOrCreateAndGetAccount(
+    address: string,
+    organizationId?: string,
+  ) {
+    const { accountMap } = this
+    const iframeClient = await this.getIframeClient()
+
+    if (accountMap[address] || accountMap[address.toLowerCase()]) {
+      return accountMap[address] || accountMap[address.toLowerCase()]
+    }
+
+    if (!organizationId) {
+      throw new WalletException(new Error('Organization ID is required'))
+    }
+
+    iframeClient.config.organizationId = organizationId
+
+    if (!address) {
+      throw new WalletException(new Error('Account address not found'))
+    }
+
+    const turnkeyAccount = await createAccount({
+      organizationId,
+      signWith: address,
+      client: iframeClient,
+    })
+
+    this.accountMap[address] = turnkeyAccount
+
+    return turnkeyAccount
+  }
+
+  public async injectAndRefresh(credentialBundle: string) {
+    const iframeClient = await this.getIframeClient()
+
+    await iframeClient.injectCredentialBundle(credentialBundle)
+    await iframeClient.refreshSession({
+      sessionType: SessionType.READ_WRITE,
+      targetPublicKey: iframeClient.iframePublicKey,
+      expirationSeconds: '900',
+    })
+
+    return
+  }
+
+  private async initFrame(): Promise<void> {
+    const { metadata } = this
+    const { turnkey, iframeClient } = await createTurnkeyIFrame(metadata)
+
+    this.turnkey = turnkey
+    this.iframeClient = iframeClient
+  }
+}
+
+async function createTurnkeyIFrame(metadata: TurnkeyMetadata) {
+  const turnkey = new Turnkey(metadata)
+
+  const turnkeyAuthIframeElementId =
+    metadata.iframeElementId || 'turnkey-auth-iframe-element-id'
+
+  if (!metadata.iframeContainerId) {
+    throw new GeneralException(new Error('iframeContainerId is required'))
+  }
+
+  if (!turnkey) {
+    throw new GeneralException(new Error('Turnkey is not initialized'))
+  }
+
+  const iframe = document.getElementById(
+    metadata.iframeContainerId,
+  ) as HTMLIFrameElement
+
+  if (!iframe) {
+    throw new GeneralException(new Error('iframe is null'))
+  }
+
+  const existingIframeClient = document.getElementById(
+    turnkeyAuthIframeElementId,
+  )
+
+  if (existingIframeClient) {
+    existingIframeClient.remove()
+  }
+
+  const iframeClient = await turnkey.iframeClient({
+    iframeContainer: iframe,
+    iframeElementId: turnkeyAuthIframeElementId,
+    iframeUrl: metadata?.iframeUrl || 'https://auth.turnkey.com',
+  })
+
+  return {
+    turnkey,
+    iframeClient,
+  }
+}

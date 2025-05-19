@@ -12,11 +12,11 @@ export const CW20_ADAPTER_CONTRACT_BY_NETWORK = {
   [Network.TestnetK8s]: 'inj1hdvy6tl89llqy3ze8lv6mz5qh66sx9enn0jxg6',
   [Network.TestnetSentry]: 'inj1hdvy6tl89llqy3ze8lv6mz5qh66sx9enn0jxg6',
   [Network.TestnetOld]: 'inj1hdvy6tl89llqy3ze8lv6mz5qh66sx9enn0jxg6',
-  [Network.Devnet]: 'inj1hdvy6tl89llqy3ze8lv6mz5qh66sx9enn0jxg6',
-  [Network.Devnet1]: 'inj1hdvy6tl89llqy3ze8lv6mz5qh66sx9enn0jxg6',
-  [Network.Devnet2]: 'inj1hdvy6tl89llqy3ze8lv6mz5qh66sx9enn0jxg6',
-  [Network.Devnet3]: 'inj1hdvy6tl89llqy3ze8lv6mz5qh66sx9enn0jxg6',
-  [Network.Local]: 'inj1hdvy6tl89llqy3ze8lv6mz5qh66sx9enn0jxg6',
+  [Network.Devnet]: 'inj1uukt3kqela4vsllvrqnrgllkna5wn3cm588w6k',
+  [Network.Devnet1]: 'inj1uukt3kqela4vsllvrqnrgllkna5wn3cm588w6k',
+  [Network.Devnet2]: 'inj1uukt3kqela4vsllvrqnrgllkna5wn3cm588w6k',
+  [Network.Devnet3]: 'inj1uukt3kqela4vsllvrqnrgllkna5wn3cm588w6k',
+  [Network.Local]: 'inj1uukt3kqela4vsllvrqnrgllkna5wn3cm588w6k',
 }
 
 export const CW20_SWAP_CONTRACT_BY_NETWORK = {
