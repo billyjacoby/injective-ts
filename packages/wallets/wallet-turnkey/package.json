@@ -3,6 +3,7 @@
   "description": "Turnkey wallet strategy for use with @injectivelabs/wallet-core.",
   "version": "1.15.10",
   "sideEffects": false,
+  "private": "true",
   "type": "module",
   "author": {
     "name": "InjectiveLabs",

@@ -1,12 +1,15 @@
 import {
   Wallet,
+  isCosmosWallet,
   ConcreteStrategiesArg,
   ConcreteWalletStrategy,
   WalletStrategyArguments,
-  isCosmosWallet,
 } from '@injectivelabs/wallet-base'
 import { BaseWalletStrategy } from '@injectivelabs/wallet-core'
-import { CosmosWalletStrategy, CosmostationWalletStrategy } from './strategies/index.js'
+import {
+  CosmosWalletStrategy,
+  CosmostationWalletStrategy,
+} from './strategies/index.js'
 import { CosmosWalletStrategyArguments } from './types.js'
 
 const createStrategy = ({
@@ -38,18 +41,15 @@ const createStrategy = ({
 const createAllStrategies = (
   args: CosmosWalletStrategyArguments,
 ): ConcreteStrategiesArg => {
-  return Object.values(Wallet).reduce(
-    (strategies, wallet) => {
-      if (strategies[wallet]) {
-        return strategies
-      }
-
-      strategies[wallet] = createStrategy({ args, wallet: wallet as Wallet })
-
+  return Object.values(Wallet).reduce((strategies, wallet) => {
+    if (strategies[wallet]) {
       return strategies
-    },
-    {} as ConcreteStrategiesArg,
-  )
+    }
+
+    strategies[wallet] = createStrategy({ args, wallet: wallet as Wallet })
+
+    return strategies
+  }, {} as ConcreteStrategiesArg)
 }
 
 export class BaseCosmosWalletStrategy extends BaseWalletStrategy {
