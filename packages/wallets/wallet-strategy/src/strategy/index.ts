@@ -17,13 +17,13 @@ import { EvmWalletStrategy } from '@injectivelabs/wallet-evm'
 import { BaseWalletStrategy } from '@injectivelabs/wallet-core'
 import { CosmosWalletStrategy } from '@injectivelabs/wallet-cosmos'
 import {
-  TurnkeyOtpWalletStrategy,
-  TurnkeyOauthWalletStrategy,
-} from '@injectivelabs/wallet-turnkey'
-import {
   TrezorBip32Strategy,
   TrezorBip44Strategy,
 } from '@injectivelabs/wallet-trezor'
+import {
+  TurnkeyOtpWalletStrategy,
+  TurnkeyOauthWalletStrategy,
+} from '@injectivelabs/wallet-turnkey'
 import { WalletConnectStrategy } from '@injectivelabs/wallet-wallet-connect'
 import { PrivateKeyWalletStrategy } from '@injectivelabs/wallet-private-key'
 import { CosmostationWalletStrategy } from '@injectivelabs/wallet-cosmostation'
