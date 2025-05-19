@@ -16,3 +16,6 @@ export enum GridStrategyType {
   Perpetual = 'perpetual',
   // Trailing Arithmetic
 }
+
+export type GridStrategyStreamResponse =
+  InjectiveTradingRpc.StreamStrategyResponse
