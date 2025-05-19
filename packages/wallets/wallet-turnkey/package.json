@@ -4,6 +4,9 @@
   "version": "1.15.12",
   "sideEffects": false,
   "private": "false",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "author": {
     "name": "InjectiveLabs",
