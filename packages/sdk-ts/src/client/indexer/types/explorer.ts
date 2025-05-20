@@ -391,6 +391,28 @@ export interface ExplorerStats {
   txsPerSecondInPast100Blocks: string
 }
 
+export interface ExplorerTxsV2Response {
+  data: ExplorerTransactionV2[]
+  paging?: InjectiveExplorerRpc.Cursor
+}
+
+export interface ExplorerTransactionV2 {
+  logs: any
+  id: string
+  code: number
+  hash: string
+  messages: any
+  txNumber: number
+  errorLog?: string
+  codespace: string
+  claimIds: string[]
+  blockNumber: number
+  txMsgTypes: string[]
+  blockTimestamp: number
+  blockUnixTimestamp: number
+  signatures: InjectiveExplorerRpc.Signature[]
+}
+
 export type GrpcIBCTransferTx = InjectiveExplorerRpc.IBCTransferTx
 export type GrpcPeggyDepositTx = InjectiveExplorerRpc.PeggyDepositTx
 export type GrpcPeggyWithdrawalTx = InjectiveExplorerRpc.PeggyWithdrawalTx

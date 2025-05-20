@@ -1,3 +1,5 @@
+import { isJsonString } from '../../../utils/helpers.js'
+import { BigNumberInWei, BigNumberInBase } from '@injectivelabs/utils'
 import {
   Block,
   GasFee,
@@ -21,10 +23,57 @@ import {
   GrpcValidatorSlashingEvent,
   ExplorerValidatorDescription,
   GrpcIndexerValidatorDescription,
+  ExplorerTransaction,
+  ContractTransaction,
+  Message,
 } from '../types/explorer.js'
 import { grpcPagingToPaging } from '../../../utils/index.js'
 import { InjectiveExplorerRpc } from '@injectivelabs/indexer-proto-ts'
 
+const ZERO_IN_BASE = new BigNumberInBase(0)
+
+const getContractTransactionV2Amount = (
+  ApiTransaction: InjectiveExplorerRpc.TxDetailData,
+): BigNumberInBase => {
+  const messages = JSON.parse(
+    Buffer.from(ApiTransaction.messages).toString('utf8'),
+  )
+
+  const { type, value } = messages[0]
+
+  const { msg } = value
+
+  if (!type.includes('MsgExecuteContract')) {
+    return ZERO_IN_BASE
+  }
+
+  if (typeof msg === 'string' && !isJsonString(msg)) {
+    return ZERO_IN_BASE
+  }
+
+  const msgObj = typeof msg === 'string' ? JSON.parse(msg) : msg
+
+  if (!msgObj.transfer) {
+    return ZERO_IN_BASE
+  }
+
+  return new BigNumberInWei(msgObj.transfer.amount).toBase()
+}
+
+const transactionV2MessagesToMessages = (messages: any): Message[] => {
+  try {
+    return JSON.parse(Buffer.from(messages).toString('utf8')).map(
+      (msg: any) =>
+        ({
+          type: msg.type,
+          message: msg.value,
+        } as Message),
+    )
+  } catch (error) {
+    console.error('Error parsing transaction messages:', error)
+    return [] // Return an empty array in case of error
+  }
+}
 /**
  * @category Indexer Grpc Transformer
  */
@@ -410,6 +459,199 @@ export class IndexerGrpcExplorerTransformer {
       blockCountInPast24Hours: response.blockCount24H,
       txsPerSecondInPast24Hours: response.txsPs24H,
       txsPerSecondInPast100Blocks: response.txsPs100B,
+    }
+  }
+
+  static getTxsV2ResponseToTxs(
+    response: InjectiveExplorerRpc.GetTxsV2Response,
+  ) {
+    return {
+      data: response.data.map((tx) =>
+        IndexerGrpcExplorerTransformer.grpcTxV2ToTransaction(tx),
+      ),
+      paging: response.paging,
+    }
+  }
+
+  static grpcTxV2ToTransaction(
+    tx: InjectiveExplorerRpc.TxData,
+  ): ExplorerTransaction {
+    let logs: any[] = []
+    try {
+      const rawLogs = Buffer.from(tx.logs).toString('utf8')
+
+      logs = JSON.parse(rawLogs || '[]')
+    } catch (e) {
+      console.error('Failed to parse logs')
+      logs = []
+    }
+
+    const txType = JSON.parse(Buffer.from(tx.txMsgTypes).toString('utf8'))
+
+    const signatures = tx.signatures.map((signature) => ({
+      address: signature.address,
+      pubkey: signature.pubkey,
+      signature: signature.signature,
+      sequence: (() => {
+        try {
+          return parseInt(signature.sequence, 10)
+        } catch (e) {
+          console.error('Failed to parse signature sequence:', e)
+          return 0
+        }
+      })(),
+    }))
+
+    const claimIds = tx.claimIds.map((claimId) => {
+      try {
+        return parseInt(claimId, 10)
+      } catch (e) {
+        console.error('Failed to parse claimId:', e)
+        return 0
+      }
+    })
+
+    let messages: Message[] = []
+    try {
+      messages = transactionV2MessagesToMessages(tx.messages)
+    } catch (e) {
+      console.error('Failed to parse messages:', e)
+      messages = []
+    }
+
+    const blockNumber = parseInt(tx.blockNumber)
+
+    return {
+      logs,
+      info: '',
+      memo: '',
+      txType,
+      claimIds,
+      messages,
+      id: tx.id,
+      signatures,
+      blockNumber,
+      gasUsed: 0,
+      gasWanted: 0,
+      hash: tx.hash,
+      code: tx.code,
+      errorLog: tx.errorLog,
+      codespace: tx.codespace,
+      blockTimestamp: tx.blockTimestamp,
+      gasFee: { amounts: [], gasLimit: 0, granter: '', payer: '' },
+    }
+  }
+
+  static getAccountTxsV2ResponseToAccountTxs(
+    response: InjectiveExplorerRpc.GetAccountTxsV2Response,
+  ) {
+    return {
+      data: response.data.map((tx) =>
+        IndexerGrpcExplorerTransformer.grpcAccountTxV2ToTransaction(tx),
+      ),
+      paging: response.paging,
+    }
+  }
+
+  static grpcAccountTxV2ToTransaction(
+    tx: InjectiveExplorerRpc.TxDetailData,
+  ): ExplorerTransaction {
+    return {
+      id: tx.id,
+      hash: tx.hash,
+      code: tx.code,
+      info: tx.info,
+      memo: tx.memo,
+      txType: tx.txType,
+      gasFee: {
+        amounts: (tx.gasFee?.amount || []).map((amount) => ({
+          amount: amount.amount,
+          denom: amount.denom,
+        })),
+        gasLimit: parseInt(tx.gasFee?.gasLimit ?? '0', 10),
+        granter: tx.gasFee?.granter ?? '',
+        payer: tx.gasFee?.payer ?? '',
+      },
+      events: tx.events,
+      errorLog: tx.errorLog,
+      codespace: tx.codespace,
+      gasUsed: parseInt(tx.gasUsed, 10),
+      blockTimestamp: tx.blockTimestamp,
+      gasWanted: parseInt(tx.gasWanted, 10),
+      blockNumber: parseInt(tx.blockNumber, 10),
+      signatures: tx.signatures.map((signature) => ({
+        address: signature.address,
+        pubkey: signature.pubkey,
+        signature: signature.signature,
+        sequence: parseInt(signature.sequence, 10),
+      })),
+      messages: transactionV2MessagesToMessages(tx.messages),
+      logs: JSON.parse(Buffer.from(tx.logs).toString('utf8')),
+      data: '/' + Buffer.from(tx.data).toString('utf8').split('/').pop(),
+      claimIds: tx.claimIds.map((claimId) => parseInt(claimId, 10)),
+    }
+  }
+
+  static getBlocksV2ResponseToBlocks(
+    response: InjectiveExplorerRpc.GetBlocksV2Response,
+  ) {
+    return {
+      paging: response.paging,
+      data: response.data.map((block) =>
+        IndexerGrpcExplorerTransformer.grpcBlockV2ToBlock(block),
+      ),
+    }
+  }
+
+  static grpcBlockV2ToBlock(block: InjectiveExplorerRpc.BlockInfo): Block {
+    return {
+      moniker: block.moniker,
+      proposer: block.proposer,
+      blockHash: block.blockHash,
+      timestamp: block.timestamp,
+      parentHash: block.parentHash,
+      height: parseInt(block.height, 10),
+      numTxs: parseInt(block.numTxs, 10),
+      numPreCommits: parseInt(block.numPreCommits, 10),
+    }
+  }
+
+  static getContractTxsV2ResponseToContractTxs(
+    response: InjectiveExplorerRpc.GetContractTxsV2Response,
+  ) {
+    return {
+      data: response.data.map((tx) =>
+        IndexerGrpcExplorerTransformer.grpcContractTxV2ToTransaction(tx),
+      ),
+      paging: response.paging,
+    }
+  }
+
+  static grpcContractTxV2ToTransaction(
+    tx: InjectiveExplorerRpc.TxDetailData,
+  ): ContractTransaction {
+    const messages = transactionV2MessagesToMessages(tx.messages)
+
+    return {
+      messages,
+      code: tx.code,
+      memo: tx.memo,
+      type: tx.txType,
+      txHash: tx.hash,
+      error_log: tx.errorLog,
+      height: parseInt(tx.blockNumber, 10),
+      tx_number: parseInt(tx.txNumber, 10),
+      time: parseInt(tx.blockTimestamp, 10),
+      amount: getContractTransactionV2Amount(tx),
+      logs: JSON.parse(Buffer.from(tx.logs).toString('utf8')),
+      data: '/' + Buffer.from(tx.data).toString('utf8').split('/').pop(),
+      fee: new BigNumberInWei(tx.gasFee?.amount[0]?.amount || '0').toBase(),
+      signatures: tx.signatures.map((signature) => ({
+        address: signature.address,
+        pubkey: signature.pubkey,
+        signature: signature.signature,
+        sequence: parseInt(signature.sequence, 10),
+      })),
     }
   }
 }
