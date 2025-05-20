@@ -1,7 +1,7 @@
-import { getGrpcIndexerWebImpl } from '../../base/BaseIndexerGrpcWebConsumer.js'
-import { StreamStatusResponse } from '../types/index.js'
 import { Subscription } from 'rxjs'
 import { InjectiveTradingRpc } from '@injectivelabs/indexer-proto-ts'
+import { StreamStatusResponse } from '../types/index.js'
+import { getGrpcIndexerWebImpl } from '../../base/BaseIndexerGrpcWebConsumer.js'
 
 /**
  * @category Indexer Grid Strategy Grpc Stream
@@ -16,17 +16,17 @@ export class IndexerGrpcTradingStream {
   }
 
   streamGridStrategies({
-    accountAddresses,
     marketId,
     callback,
     onEndCallback,
+    accountAddresses,
     onStatusCallback,
   }: {
-    accountAddresses?: string[]
     marketId?: string
-    callback: (response: InjectiveTradingRpc.StreamStrategyResponse) => void
+    accountAddresses?: string[]
     onEndCallback?: (status?: StreamStatusResponse) => void
     onStatusCallback?: (status: StreamStatusResponse) => void
+    callback: (response: InjectiveTradingRpc.StreamStrategyResponse) => void
   }): Subscription {
     const request = InjectiveTradingRpc.StreamStrategyRequest.create()
 
