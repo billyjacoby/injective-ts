@@ -4,12 +4,26 @@ import {
   WalletException,
   GeneralException,
   UnspecifiedErrorCode,
+  TurnkeyWalletSessionException,
 } from '@injectivelabs/exceptions'
-import { WalletAction, TurnkeyMetadata } from '@injectivelabs/wallet-base'
+import {
+  WalletAction,
+  TurnkeyMetadata,
+  TurnkeyProvider,
+} from '@injectivelabs/wallet-base'
 import { getInjectiveAddress } from '@injectivelabs/sdk-ts'
 import { HttpRestClient } from '@injectivelabs/utils'
 import { createAccount } from '@turnkey/viem'
 import { TurnkeyErrorCodes } from '../types.js'
+import {
+  DEFAULT_TURNKEY_REFRESH_SECONDS,
+  TURNKEY_OAUTH_PATH,
+  TURNKEY_OTP_INIT_PATH,
+  TURNKEY_OTP_VERIFY_PATH,
+} from '../consts.js'
+import { TurnkeyOtpWallet } from './otp.js'
+import { TurnkeyOauthWallet } from './oauth.js'
+import { generateGoogleUrl } from '../../utils.js'
 
 export class TurnkeyWallet {
   protected iframeClient: TurnkeyIframeClient | undefined
@@ -24,6 +38,9 @@ export class TurnkeyWallet {
     string,
     Awaited<ReturnType<typeof createAccount>>
   > = {}
+  public organizationId: string
+
+  private otpId: string | undefined
 
   public setMetadata(metadata: Partial<TurnkeyMetadata>) {
     this.metadata = { ...this.metadata, ...metadata }
@@ -31,7 +48,7 @@ export class TurnkeyWallet {
 
   constructor(metadata: TurnkeyMetadata) {
     this.metadata = metadata
-
+    this.organizationId = metadata.organizationId
     this.client = new HttpRestClient(metadata.apiServerEndpoint)
   }
 
@@ -129,20 +146,20 @@ export class TurnkeyWallet {
   public async getAccounts() {
     const iframeClient = await this.getIframeClient()
 
-    if (!this.metadata.organizationId) {
+    if (!this.organizationId) {
       return []
     }
 
     try {
       const response = await iframeClient.getWallets({
-        organizationId: this.metadata.organizationId,
+        organizationId: this.organizationId,
       })
 
       const accounts = await Promise.allSettled(
         response.wallets.map((wallet) =>
           iframeClient.getWalletAccounts({
             walletId: wallet.walletId,
-            organizationId: this.metadata.organizationId,
+            organizationId: this.organizationId,
           }),
         ),
       )
@@ -180,7 +197,7 @@ export class TurnkeyWallet {
 
   public async getOrCreateAndGetAccount(
     address: string,
-    organizationId?: string,
+    organizationId: string,
   ) {
     const { accountMap } = this
     const iframeClient = await this.getIframeClient()
@@ -210,17 +227,155 @@ export class TurnkeyWallet {
     return turnkeyAccount
   }
 
-  public async injectAndRefresh(credentialBundle: string) {
+  public async injectAndRefresh(
+    credentialBundle: string,
+    options: { expirationSeconds?: string; organizationId?: string },
+  ) {
+    const expirationSeconds =
+      options.expirationSeconds || DEFAULT_TURNKEY_REFRESH_SECONDS
     const iframeClient = await this.getIframeClient()
 
     await iframeClient.injectCredentialBundle(credentialBundle)
     await iframeClient.refreshSession({
       sessionType: SessionType.READ_WRITE,
       targetPublicKey: iframeClient.iframePublicKey,
-      expirationSeconds: '900',
+      expirationSeconds: options.expirationSeconds,
     })
 
+    // If we just logged in, we have the new org ID here and don't need to wait on getSession method
+    if (options.organizationId) {
+      this.organizationId = options.organizationId
+      this.metadata.organizationId = options.organizationId
+    } else {
+      const session = await this.getSession()
+      this.organizationId = session.organizationId
+      this.metadata.organizationId = session.organizationId
+    }
+
+    // Refresh the session 2 minutes before it expires
+    setTimeout(() => {
+      iframeClient.refreshSession({
+        sessionType: SessionType.READ_WRITE,
+        targetPublicKey: iframeClient.iframePublicKey,
+        expirationSeconds,
+      })
+    }, (parseInt(expirationSeconds) - 120) * 1000)
+
     return
+  }
+
+  public async initOTP(email: string) {
+    const iframeClient = await this.getIframeClient()
+
+    const result = await TurnkeyOtpWallet.initEmailOTP({
+      client: this.client,
+      iframeClient,
+      email,
+      otpInitPath: this.metadata.otpInitPath || TURNKEY_OTP_INIT_PATH,
+    })
+
+    if (!result || !result.otpId) {
+      throw new WalletException(new Error('Failed to initialize OTP'))
+    }
+
+    if (result?.organizationId) {
+      this.organizationId = result.organizationId
+    }
+
+    if (result?.otpId) {
+      this.otpId = result.otpId
+    }
+
+    return result
+  }
+  public async confirmOTP(otpCode: string) {
+    const iframeClient = await this.getIframeClient()
+
+    if (!this.otpId) {
+      throw new WalletException(new Error('OTP ID is required'))
+    }
+
+    const result = await TurnkeyOtpWallet.confirmEmailOTP({
+      client: this.client,
+      iframeClient,
+      otpCode,
+      emailOTPId: this.otpId,
+      organizationId: this.organizationId,
+      otpVerifyPath: this.metadata.otpVerifyPath || TURNKEY_OTP_VERIFY_PATH,
+    })
+
+    if (!result || !result.credentialBundle) {
+      throw new WalletException(new Error('Failed to confirm OTP'))
+    }
+
+    await this.injectAndRefresh(result.credentialBundle, {
+      expirationSeconds: this.metadata.expirationSeconds,
+      organizationId: result.organizationId,
+    })
+
+    return result
+  }
+  public async initOAuth(
+    provider: TurnkeyProvider.Google | TurnkeyProvider.Apple,
+  ) {
+    const iframeClient = await this.getIframeClient()
+    const nonce = await TurnkeyOauthWallet.generateOAuthNonce(iframeClient)
+
+    if (provider === TurnkeyProvider.Apple) {
+      // TODO: implement the ability to generate Apple OAuth URL
+      return nonce
+    }
+
+    if (!this.metadata?.googleClientId || !this.metadata?.googleRedirectUri) {
+      throw new WalletException(
+        new Error('googleClientId and googleRedirectUri are required'),
+      )
+    }
+    return generateGoogleUrl({
+      nonce,
+      clientId: this.metadata.googleClientId,
+      redirectUri: this.metadata.googleRedirectUri,
+    })
+  }
+  public async confirmOAuth(
+    provider: TurnkeyProvider.Google | TurnkeyProvider.Apple,
+    oidcToken: string,
+  ) {
+    const iframeClient = await this.getIframeClient()
+
+    const oauthResult = await TurnkeyOauthWallet.oauthLogin({
+      client: this.client,
+      iframeClient,
+      oidcToken,
+      providerName: provider.toString() as 'google' | 'apple',
+      oauthLoginPath: this.metadata.oauthLoginPath || TURNKEY_OAUTH_PATH,
+    })
+
+    if (!oauthResult || !oauthResult.credentialBundle) {
+      throw new WalletException(new Error('Unexpected OAuth result'))
+    }
+
+    await this.injectAndRefresh(oauthResult.credentialBundle, {
+      expirationSeconds: this.metadata.expirationSeconds,
+      organizationId: oauthResult.organizationId,
+    })
+    return oauthResult.credentialBundle
+  }
+
+  public async refreshSession() {
+    const session = await this.getSession()
+
+    if (session.session?.token) {
+      await this.injectAndRefresh(session.session.token, {
+        expirationSeconds: this.metadata.expirationSeconds,
+      })
+
+      return session.session.token
+    }
+
+    throw new TurnkeyWalletSessionException(
+      new Error('Session expired. Please login again.'),
+    )
   }
 
   private async initFrame(): Promise<void> {

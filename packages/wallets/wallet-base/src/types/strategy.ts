@@ -72,21 +72,17 @@ export interface TurnkeyMetadata {
   apiBaseUrl: string
   apiServerEndpoint: string
   iframeUrl?: string
-  email?: string
   session?: TurnkeySession
-  otpId?: string
-  otpCode?: string
-  oidcToken?: string
   iframeElementId?: string
   iframeContainerId: string
   credentialBundle?: string
-  organizationId?: string
-  provider?: TurnkeyProvider
+  organizationId: string
+  googleClientId?: string
+  googleRedirectUri?: string
+  expirationSeconds?: string
   otpInitPath?: string
   otpVerifyPath?: string
   oauthLoginPath?: string
-  googleClientId?: string
-  googleRedirectUri?: string
 }
 
 export interface WalletMetadata {
@@ -258,6 +254,8 @@ export interface ConcreteWalletStrategy
   disconnect?(): Promise<void> | void
 
   getCosmosWallet?(chainId: ChainId): CosmosWalletAbstraction
+
+  getWalletClient?<T>(): Promise<T>
 }
 
 export interface WalletStrategy {
@@ -267,6 +265,7 @@ export interface WalletStrategy {
   metadata?: WalletMetadata
 
   getWallet(): Wallet
+  getWalletClient?<T>(): Promise<T>
   setWallet(wallet: Wallet): void
   setMetadata(metadata?: WalletMetadata): void
   getStrategy(): ConcreteWalletStrategy

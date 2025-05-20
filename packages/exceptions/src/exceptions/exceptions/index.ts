@@ -12,6 +12,7 @@ import { CosmosWalletException } from './CosmosWalletException.js'
 import { TransactionException } from './TransactionException.js'
 import { WalletException } from './WalletException.js'
 import { BitGetException } from './BitGetException.js'
+import { TurnkeyWalletSessionException } from './TurnkeyWalletSessionException.js'
 
 export {
   Web3Exception,
@@ -28,4 +29,5 @@ export {
   LedgerCosmosException,
   CosmosWalletException,
   GrpcUnaryRequestException,
+  TurnkeyWalletSessionException,
 }

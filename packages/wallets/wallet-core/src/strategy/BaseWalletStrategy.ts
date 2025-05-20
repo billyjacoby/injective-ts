@@ -128,6 +128,19 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
     return this.getStrategy().getSessionOrConfirm(address)
   }
 
+  public async getWalletClient<T>(): Promise<T> {
+    if (this.getStrategy()?.getWalletClient) {
+      const result = this.getStrategy()?.getWalletClient<T>?.()
+      if (result) {
+        return result
+      }
+    }
+
+    throw new WalletException(
+      new Error('Wallet client not found. Please check your wallet strategy.'),
+    )
+  }
+
   public async sendTransaction(
     tx: DirectSignResponse | TxRaw,
     options: SendTransactionOptions,
