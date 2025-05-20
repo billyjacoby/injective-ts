@@ -1,5 +1,5 @@
-import { BigNumberInWei, BigNumberInBase } from '@injectivelabs/utils'
 import { isJsonString } from '../../../utils/helpers.js'
+import { BigNumberInWei, BigNumberInBase } from '@injectivelabs/utils'
 import {
   Block,
   GasFee,
@@ -522,23 +522,23 @@ export class IndexerGrpcExplorerTransformer {
     const blockNumber = parseInt(tx.blockNumber)
 
     return {
-      id: tx.id,
       logs,
-      code: tx.code,
-      hash: tx.hash,
-      claimIds,
-      errorLog: tx.errorLog,
-      messages,
-      codespace: tx.codespace,
-      txType,
-      signatures,
-      blockNumber,
-      blockTimestamp: tx.blockTimestamp,
-      gasFee: { amounts: [], gasLimit: 0, granter: '', payer: '' },
       info: '',
       memo: '',
+      txType,
+      claimIds,
+      messages,
+      id: tx.id,
+      signatures,
+      blockNumber,
       gasUsed: 0,
       gasWanted: 0,
+      hash: tx.hash,
+      code: tx.code,
+      errorLog: tx.errorLog,
+      codespace: tx.codespace,
+      blockTimestamp: tx.blockTimestamp,
+      gasFee: { amounts: [], gasLimit: 0, granter: '', payer: '' },
     }
   }
 
@@ -573,22 +573,22 @@ export class IndexerGrpcExplorerTransformer {
         payer: tx.gasFee?.payer ?? '',
       },
       events: tx.events,
-      gasUsed: parseInt(tx.gasUsed, 10),
       errorLog: tx.errorLog,
-      claimIds: tx.claimIds.map((claimId) => parseInt(claimId, 10)),
+      codespace: tx.codespace,
+      gasUsed: parseInt(tx.gasUsed, 10),
+      blockTimestamp: tx.blockTimestamp,
       gasWanted: parseInt(tx.gasWanted, 10),
+      blockNumber: parseInt(tx.blockNumber, 10),
       signatures: tx.signatures.map((signature) => ({
         address: signature.address,
         pubkey: signature.pubkey,
         signature: signature.signature,
         sequence: parseInt(signature.sequence, 10),
       })),
-      blockNumber: parseInt(tx.blockNumber, 10),
-      blockTimestamp: tx.blockTimestamp,
-      data: '/' + Buffer.from(tx.data).toString('utf8').split('/').pop(),
       messages: transactionV2MessagesToMessages(tx.messages),
       logs: JSON.parse(Buffer.from(tx.logs).toString('utf8')),
-      codespace: tx.codespace,
+      data: '/' + Buffer.from(tx.data).toString('utf8').split('/').pop(),
+      claimIds: tx.claimIds.map((claimId) => parseInt(claimId, 10)),
     }
   }
 
@@ -596,10 +596,10 @@ export class IndexerGrpcExplorerTransformer {
     response: InjectiveExplorerRpc.GetBlocksV2Response,
   ) {
     return {
+      paging: response.paging,
       data: response.data.map((block) =>
         IndexerGrpcExplorerTransformer.grpcBlockV2ToBlock(block),
       ),
-      paging: response.paging,
     }
   }
 
@@ -633,25 +633,25 @@ export class IndexerGrpcExplorerTransformer {
     const messages = transactionV2MessagesToMessages(tx.messages)
 
     return {
+      messages,
       code: tx.code,
       memo: tx.memo,
       type: tx.txType,
+      txHash: tx.hash,
+      error_log: tx.errorLog,
+      height: parseInt(tx.blockNumber, 10),
+      tx_number: parseInt(tx.txNumber, 10),
+      time: parseInt(tx.blockTimestamp, 10),
+      amount: getContractTransactionV2Amount(tx),
+      logs: JSON.parse(Buffer.from(tx.logs).toString('utf8')),
+      data: '/' + Buffer.from(tx.data).toString('utf8').split('/').pop(),
+      fee: new BigNumberInWei(tx.gasFee?.amount[0]?.amount || '0').toBase(),
       signatures: tx.signatures.map((signature) => ({
         address: signature.address,
         pubkey: signature.pubkey,
         signature: signature.signature,
         sequence: parseInt(signature.sequence, 10),
       })),
-      data: '/' + Buffer.from(tx.data).toString('utf8').split('/').pop(),
-      messages,
-      logs: JSON.parse(Buffer.from(tx.logs).toString('utf8')),
-      height: parseInt(tx.blockNumber, 10),
-      error_log: tx.errorLog,
-      txHash: tx.hash,
-      tx_number: parseInt(tx.txNumber, 10),
-      time: parseInt(tx.blockTimestamp, 10),
-      fee: new BigNumberInWei(tx.gasFee?.amount[0]?.amount || '0').toBase(),
-      amount: getContractTransactionV2Amount(tx),
     }
   }
 }

@@ -571,21 +571,21 @@ export class IndexerGrpcExplorerApi extends BaseGrpcConsumer {
   }
 
   async fetchTxsV2({
-    blockNumber,
-    startTime,
-    endTime,
-    perPage,
-    status,
-    token,
     type,
+    token,
+    status,
+    perPage,
+    endTime,
+    startTime,
+    blockNumber,
   }: {
-    blockNumber?: number
-    startTime?: number
-    endTime?: number
-    perPage?: number
-    status?: string
-    token?: string
     type?: string
+    token?: string
+    status?: string
+    perPage?: number
+    endTime?: number
+    startTime?: number
+    blockNumber?: number
   }) {
     const request = InjectiveExplorerRpc.GetTxsV2Request.create()
 
@@ -641,19 +641,19 @@ export class IndexerGrpcExplorerApi extends BaseGrpcConsumer {
   }
 
   async fetchAccountTxsV2({
+    type,
+    token,
     address,
-    startTime,
     endTime,
     perPage,
-    token,
-    type,
+    startTime,
   }: {
+    type?: string
+    token?: string
     address: string
-    startTime?: number
     endTime?: number
     perPage?: number
-    token?: string
-    type?: string
+    startTime?: number
   }) {
     const request = InjectiveExplorerRpc.GetAccountTxsV2Request.create()
 
@@ -706,11 +706,11 @@ export class IndexerGrpcExplorerApi extends BaseGrpcConsumer {
   }
 
   async fetchBlocksV2({
-    perPage,
     token,
+    perPage,
   }: {
-    perPage?: number
     token?: string
+    perPage?: number
   }) {
     const request = InjectiveExplorerRpc.GetBlocksV2Request.create({})
 

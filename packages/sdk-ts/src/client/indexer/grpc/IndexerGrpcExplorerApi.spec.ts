@@ -267,8 +267,6 @@ describe('IndexerGrpcExplorerApi', () => {
         perPage: 10,
       })
 
-      console.log(JSON.stringify(response, null, 2))
-
       expect(response).toBeDefined()
     } catch (e) {
       console.error(
@@ -282,8 +280,6 @@ describe('IndexerGrpcExplorerApi', () => {
       const response = await indexerGrpcExplorerApi.fetchBlocksV2({
         perPage: 10,
       })
-
-      console.log(JSON.stringify(response, null, 2))
 
       expect(response).toBeDefined()
     } catch (e) {
@@ -299,8 +295,6 @@ describe('IndexerGrpcExplorerApi', () => {
         contractAddress: 'inj1qk00h5atutpsv900x202pxx42npjr9thrzhgxn',
         perPage: 10,
       })
-
-      console.log(JSON.stringify(response, null, 2))
 
       expect(response).toBeDefined()
     } catch (e) {

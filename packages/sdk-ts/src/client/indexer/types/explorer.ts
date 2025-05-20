@@ -397,20 +397,20 @@ export interface ExplorerTxsV2Response {
 }
 
 export interface ExplorerTransactionV2 {
-  id: string
   logs: any
+  id: string
   code: number
   hash: string
-  claimIds: string[]
-  errorLog?: string
   messages: any
-  codespace: string
-  txMsgTypes: string[]
-  signatures: InjectiveExplorerRpc.Signature[]
   txNumber: number
+  errorLog?: string
+  codespace: string
+  claimIds: string[]
   blockNumber: number
+  txMsgTypes: string[]
   blockTimestamp: number
   blockUnixTimestamp: number
+  signatures: InjectiveExplorerRpc.Signature[]
 }
 
 export type GrpcIBCTransferTx = InjectiveExplorerRpc.IBCTransferTx
