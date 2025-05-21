@@ -1,34 +1,34 @@
 /* eslint-disable class-methods-use-this */
 import {
+  TxRaw,
+  TxGrpcApi,
+  AminoSignResponse,
+  DirectSignResponse,
+} from '@injectivelabs/sdk-ts'
+import {
   ErrorType,
   WalletException,
   UnspecifiedErrorCode,
   TransactionException,
   CosmosWalletException,
 } from '@injectivelabs/exceptions'
-import {
-  TxRaw,
-  TxGrpcApi,
-  AminoSignResponse,
-  DirectSignResponse,
-} from '@injectivelabs/sdk-ts'
+import { getAddress } from 'viem'
 import { HttpRestClient } from '@injectivelabs/utils'
 import { AccountAddress, EthereumChainId } from '@injectivelabs/ts-types'
+import { TurnkeyIframeClient } from '@turnkey/sdk-browser'
 import {
   StdSignDoc,
   WalletAction,
+  TurnkeyMetadata,
   WalletDeviceType,
   type WalletMetadata,
   BaseConcreteStrategy,
   ConcreteWalletStrategy,
   SendTransactionOptions,
   ConcreteEthereumWalletStrategyArgs,
-  TurnkeyMetadata,
 } from '@injectivelabs/wallet-base'
-import { TurnkeyWallet } from './turnkey/turnkey.js'
 import { TurnkeyErrorCodes } from './types.js'
-import { TurnkeyIframeClient } from '@turnkey/sdk-browser'
-import { getAddress } from 'viem'
+import { TurnkeyWallet } from './turnkey/turnkey.js'
 
 export class TurnkeyWalletStrategy
   extends BaseConcreteStrategy

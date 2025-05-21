@@ -2,20 +2,21 @@ import { Exception } from './exceptions/types/index.js'
 import { ThrownException } from './types.js'
 
 export const THROWN_EXCEPTIONS = [
-  'GrpcUnaryRequestException',
-  'HttpRequestException',
   'Web3Exception',
-  'GeneralException',
   'LedgerException',
-  'LedgerCosmosException',
-  'MetamaskException',
   'TrezorException',
-  'CosmosWalletException',
-  'TransactionException',
   'WalletException',
-  'TrustWalletException',
-  'OkxWalletException',
   'BitGetException',
+  'GeneralException',
+  'MetamaskException',
+  'OkxWalletException',
+  'HttpRequestException',
+  'TransactionException',
+  'TrustWalletException',
+  'LedgerCosmosException',
+  'CosmosWalletException',
+  'GrpcUnaryRequestException',
+  'TurnkeyWalletSessionException',
 ]
 
 export const isThrownException = (

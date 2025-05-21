@@ -1,4 +1,3 @@
-import { Turnkey, SessionType, TurnkeyIframeClient } from '@turnkey/sdk-browser'
 import {
   ErrorType,
   WalletException,
@@ -11,36 +10,38 @@ import {
   TurnkeyMetadata,
   TurnkeyProvider,
 } from '@injectivelabs/wallet-base'
-import { getInjectiveAddress } from '@injectivelabs/sdk-ts'
-import { HttpRestClient } from '@injectivelabs/utils'
 import { createAccount } from '@turnkey/viem'
-import { TurnkeyErrorCodes } from '../types.js'
+import { HttpRestClient } from '@injectivelabs/utils'
+import { getInjectiveAddress } from '@injectivelabs/sdk-ts'
+import { Turnkey, SessionType, TurnkeyIframeClient } from '@turnkey/sdk-browser'
 import {
-  DEFAULT_TURNKEY_REFRESH_SECONDS,
   TURNKEY_OAUTH_PATH,
   TURNKEY_OTP_INIT_PATH,
   TURNKEY_OTP_VERIFY_PATH,
+  DEFAULT_TURNKEY_REFRESH_SECONDS,
 } from '../consts.js'
 import { TurnkeyOtpWallet } from './otp.js'
+import { TurnkeyErrorCodes } from '../types.js'
 import { TurnkeyOauthWallet } from './oauth.js'
 import { generateGoogleUrl } from '../../utils.js'
 
 export class TurnkeyWallet {
-  protected iframeClient: TurnkeyIframeClient | undefined
-
-  protected turnkey: Turnkey | undefined
-
   protected client: HttpRestClient
 
   private metadata: TurnkeyMetadata
+
+  protected turnkey: Turnkey | undefined
+
+  protected iframeClient: TurnkeyIframeClient | undefined
+
+  public organizationId: string
+
+  private otpId: string | undefined
 
   private accountMap: Record<
     string,
     Awaited<ReturnType<typeof createAccount>>
   > = {}
-  public organizationId: string
-
-  private otpId: string | undefined
 
   public setMetadata(metadata: Partial<TurnkeyMetadata>) {
     this.metadata = { ...this.metadata, ...metadata }
@@ -238,8 +239,8 @@ export class TurnkeyWallet {
     await iframeClient.injectCredentialBundle(credentialBundle)
     await iframeClient.refreshSession({
       sessionType: SessionType.READ_WRITE,
-      targetPublicKey: iframeClient.iframePublicKey,
       expirationSeconds: options.expirationSeconds,
+      targetPublicKey: iframeClient.iframePublicKey,
     })
 
     // If we just logged in, we have the new org ID here and don't need to wait on getSession method
@@ -255,9 +256,9 @@ export class TurnkeyWallet {
     // Refresh the session 2 minutes before it expires
     setTimeout(() => {
       iframeClient.refreshSession({
+        expirationSeconds,
         sessionType: SessionType.READ_WRITE,
         targetPublicKey: iframeClient.iframePublicKey,
-        expirationSeconds,
       })
     }, (parseInt(expirationSeconds) - 120) * 1000)
 
@@ -288,6 +289,7 @@ export class TurnkeyWallet {
 
     return result
   }
+
   public async confirmOTP(otpCode: string) {
     const iframeClient = await this.getIframeClient()
 
@@ -296,9 +298,9 @@ export class TurnkeyWallet {
     }
 
     const result = await TurnkeyOtpWallet.confirmEmailOTP({
-      client: this.client,
-      iframeClient,
       otpCode,
+      iframeClient,
+      client: this.client,
       emailOTPId: this.otpId,
       organizationId: this.organizationId,
       otpVerifyPath: this.metadata.otpVerifyPath || TURNKEY_OTP_VERIFY_PATH,
@@ -309,12 +311,13 @@ export class TurnkeyWallet {
     }
 
     await this.injectAndRefresh(result.credentialBundle, {
-      expirationSeconds: this.metadata.expirationSeconds,
       organizationId: result.organizationId,
+      expirationSeconds: this.metadata.expirationSeconds,
     })
 
     return result
   }
+
   public async initOAuth(
     provider: TurnkeyProvider.Google | TurnkeyProvider.Apple,
   ) {
@@ -337,6 +340,7 @@ export class TurnkeyWallet {
       redirectUri: this.metadata.googleRedirectUri,
     })
   }
+
   public async confirmOAuth(
     provider: TurnkeyProvider.Google | TurnkeyProvider.Apple,
     oidcToken: string,
@@ -344,9 +348,9 @@ export class TurnkeyWallet {
     const iframeClient = await this.getIframeClient()
 
     const oauthResult = await TurnkeyOauthWallet.oauthLogin({
-      client: this.client,
-      iframeClient,
       oidcToken,
+      iframeClient,
+      client: this.client,
       providerName: provider.toString() as 'google' | 'apple',
       oauthLoginPath: this.metadata.oauthLoginPath || TURNKEY_OAUTH_PATH,
     })
@@ -356,9 +360,10 @@ export class TurnkeyWallet {
     }
 
     await this.injectAndRefresh(oauthResult.credentialBundle, {
-      expirationSeconds: this.metadata.expirationSeconds,
       organizationId: oauthResult.organizationId,
+      expirationSeconds: this.metadata.expirationSeconds,
     })
+
     return oauthResult.credentialBundle
   }
 
