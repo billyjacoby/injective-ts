@@ -50,7 +50,6 @@ export class TurnkeyOauthWallet {
       if (!targetPublicKey) {
         throw new WalletException(new Error('Target public key not found'))
       }
-
       // client.$post is undefined, resorting to this for now
       const response = await client.post<{
         data: TurnkeyOauthLoginResponse

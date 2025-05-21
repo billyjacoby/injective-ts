@@ -20,10 +20,7 @@ import {
   TrezorBip32Strategy,
   TrezorBip44Strategy,
 } from '@injectivelabs/wallet-trezor'
-import {
-  TurnkeyOtpWalletStrategy,
-  TurnkeyOauthWalletStrategy,
-} from '@injectivelabs/wallet-turnkey'
+import { TurnkeyWalletStrategy } from '@injectivelabs/wallet-turnkey'
 import { WalletConnectStrategy } from '@injectivelabs/wallet-wallet-connect'
 import { PrivateKeyWalletStrategy } from '@injectivelabs/wallet-private-key'
 import { CosmostationWalletStrategy } from '@injectivelabs/wallet-cosmostation'
@@ -123,22 +120,14 @@ const createStrategy = ({
       }
 
       return new MagicStrategy(args)
-    case Wallet.TurnkeyOtp:
+    case Wallet.Turnkey:
       if (
         !args.metadata?.turnkey?.defaultOrganizationId ||
         !args.metadata?.turnkey?.iframeContainerId
       ) {
         return undefined
       }
-      return new TurnkeyOtpWalletStrategy(ethWalletArgs)
-    case Wallet.TurnkeyOauth:
-      if (
-        !args.metadata?.turnkey?.defaultOrganizationId ||
-        !args.metadata?.turnkey?.iframeContainerId
-      ) {
-        return undefined
-      }
-      return new TurnkeyOauthWalletStrategy(ethWalletArgs)
+      return new TurnkeyWalletStrategy(ethWalletArgs)
     default:
       return undefined
   }

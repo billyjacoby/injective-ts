@@ -10,8 +10,7 @@ export const isEvmWallet = (wallet: Wallet): boolean =>
     Wallet.OkxWallet,
     Wallet.PrivateKey,
     Wallet.TrezorBip32,
-    Wallet.TurnkeyOtp,
-    Wallet.TurnkeyOauth,
+    Wallet.Turnkey,
     Wallet.TrezorBip44,
     Wallet.TrustWallet,
     Wallet.LedgerLegacy,
@@ -28,8 +27,7 @@ export const isEvmBrowserWallet = (wallet: Wallet) =>
     Wallet.Metamask,
     Wallet.OkxWallet,
     Wallet.TrustWallet,
-    Wallet.TurnkeyOtp,
-    Wallet.TurnkeyOauth,
+    Wallet.Turnkey,
   ].includes(wallet)
 
 export const isCosmosBrowserWallet = (wallet: Wallet): boolean =>

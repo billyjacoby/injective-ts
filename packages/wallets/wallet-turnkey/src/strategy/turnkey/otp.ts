@@ -51,9 +51,9 @@ export class TurnkeyOtpWallet {
 
   static async confirmEmailOTP(args: {
     otpCode: string
-    emailOTPId?: string
+    emailOTPId: string
     client: HttpRestClient
-    organizationId?: string
+    organizationId: string
     iframeClient: TurnkeyIframeClient
     otpVerifyPath?: string
   }) {
