@@ -51,7 +51,7 @@ import {
   MsgBroadcasterTxOptions,
   MsgBroadcasterTxOptionsWithAddresses,
 } from './types.js'
-import { SdkEventEmitter, checkIfTxRunOutOfGas } from '../utils/index.js'
+import { checkIfTxRunOutOfGas } from '../utils/index.js'
 import {
   Wallet,
   isCosmosWallet,
@@ -214,7 +214,7 @@ export class MsgBroadcaster {
     } catch (e) {
       const error = e as any
 
-      SdkEventEmitter.getInstance().emit('transaction-fail', {
+      walletStrategy.emit('transaction-fail', {
         isTelemetry: true,
       })
 
@@ -256,7 +256,7 @@ export class MsgBroadcaster {
     } catch (e) {
       const error = e as any
 
-      SdkEventEmitter.getInstance().emit('transaction-fail', {
+      walletStrategy.emit('transaction-fail', {
         isTelemetry: true,
       })
 
@@ -337,7 +337,7 @@ export class MsgBroadcaster {
       tx.ethereumAddress,
     )
 
-    SdkEventEmitter.getInstance().emit('transaction-signed')
+    walletStrategy.emit('transaction-signed')
 
     const pubKeyOrSignatureDerivedPubKey = getEthereumWalletPubKey({
       pubKey: baseAccount.pubKey?.key,
@@ -443,7 +443,7 @@ export class MsgBroadcaster {
       tx.ethereumAddress,
     )
 
-    SdkEventEmitter.getInstance().emit('transaction-signed', {
+    walletStrategy.emit('transaction-signed', {
       isTelemetry: true,
     })
 
@@ -562,7 +562,7 @@ export class MsgBroadcaster {
       })
 
     try {
-      SdkEventEmitter.getInstance().emit('transaction-signed', {
+      walletStrategy.emit('transaction-signed', {
         isTelemetry: true,
       })
 
@@ -705,7 +705,7 @@ export class MsgBroadcaster {
         address: tx.injectiveAddress,
       })
 
-      SdkEventEmitter.getInstance().emit('transaction-signed', {
+      walletStrategy.emit('transaction-signed', {
         isTelemetry: true,
       })
 
@@ -737,7 +737,7 @@ export class MsgBroadcaster {
       accountNumber: baseAccount.accountNumber,
     })) as DirectSignResponse
 
-    SdkEventEmitter.getInstance().emit('transaction-signed', {
+    walletStrategy.emit('transaction-signed', {
       isTelemetry: true,
     })
 
@@ -824,7 +824,7 @@ export class MsgBroadcaster {
       }),
     })
 
-    SdkEventEmitter.getInstance().emit('transaction-signed')
+    walletStrategy.emit('transaction-signed')
 
     /**
      * Create TxRaw from the signed tx that we
@@ -982,7 +982,7 @@ export class MsgBroadcaster {
       accountNumber: baseAccount.accountNumber,
     })) as DirectSignResponse
 
-    SdkEventEmitter.getInstance().emit('transaction-signed', {
+    walletStrategy.emit('transaction-signed', {
       isTelemetry: true,
     })
 

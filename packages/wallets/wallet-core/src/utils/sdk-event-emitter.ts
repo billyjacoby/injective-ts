@@ -1,3 +1,4 @@
+// note: soon to decide for the removal of this file
 import { EventEmitter } from 'events'
 
 type SdkEvents = {

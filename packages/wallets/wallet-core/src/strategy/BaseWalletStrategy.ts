@@ -1,3 +1,4 @@
+import { EventEmitter } from 'events'
 import {
   TxRaw,
   TxResponse,
@@ -27,6 +28,11 @@ import {
 } from '@injectivelabs/wallet-base'
 import { StdSignDoc } from '@keplr-wallet/types'
 
+type SdkEvents = {
+  'transaction-signed': Record<string, any>
+  'transaction-fail': Record<string, any>
+}
+
 const getInitialWallet = (args: WalletStrategyArguments): Wallet => {
   if (args.wallet) {
     return args.wallet
@@ -51,6 +57,29 @@ const getInitialWallet = (args: WalletStrategyArguments): Wallet => {
   return keys[0] as Wallet
 }
 
+class TypedEventEmitter extends EventEmitter {
+  emit<key extends keyof SdkEvents>(
+    event: key,
+    payload?: SdkEvents[key],
+  ): boolean {
+    return super.emit(event, payload)
+  }
+
+  on<key extends keyof SdkEvents>(
+    event: key,
+    listener: (payload?: SdkEvents[key]) => void,
+  ): this {
+    return super.on(event, listener)
+  }
+
+  off<key extends keyof SdkEvents>(
+    event: key,
+    listener: (payload?: SdkEvents[key]) => void,
+  ): this {
+    return super.off(event, listener)
+  }
+}
+
 export default class BaseWalletStrategy implements WalletStrategyInterface {
   public strategies: ConcreteStrategiesArg
 
@@ -61,6 +90,12 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
   public metadata?: WalletMetadata
 
   public wallets?: Wallet[]
+
+  private emitter = new TypedEventEmitter()
+
+  public on = this.emitter.on.bind(this.emitter)
+  public off = this.emitter.off.bind(this.emitter)
+  public emit = this.emitter.emit.bind(this.emitter)
 
   constructor(args: WalletStrategyArguments) {
     this.args = args
