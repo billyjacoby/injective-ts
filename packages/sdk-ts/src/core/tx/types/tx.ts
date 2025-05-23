@@ -119,3 +119,8 @@ export interface TxResponse {
   timestamp: string
   events?: any[]
 }
+
+export interface TxResponseWithElapsedtime {
+  timeElapsed: number
+  txResponse: TxResponse
+}
