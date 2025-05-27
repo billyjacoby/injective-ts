@@ -9,7 +9,11 @@ import {
   type TurnkeyOTPCredentialsResponse,
 } from './../types.js'
 import { type HttpRestClient } from '@injectivelabs/utils'
-import { TURNKEY_OTP_INIT_PATH, TURNKEY_OTP_VERIFY_PATH } from '../consts.js'
+import {
+  DEFAULT_TURNKEY_REFRESH_SECONDS,
+  TURNKEY_OTP_INIT_PATH,
+  TURNKEY_OTP_VERIFY_PATH,
+} from '../consts.js'
 
 export class TurnkeyOtpWallet {
   static async initEmailOTP(args: {
@@ -56,8 +60,9 @@ export class TurnkeyOtpWallet {
     organizationId: string
     iframeClient: TurnkeyIframeClient
     otpVerifyPath?: string
+    expirationSeconds?: number
   }) {
-    const { client, iframeClient } = args
+    const { client, iframeClient, expirationSeconds } = args
 
     try {
       const organizationId = args.organizationId
@@ -84,6 +89,9 @@ export class TurnkeyOtpWallet {
         otpId: emailOTPId,
         otpCode: args.otpCode,
         suborgID: organizationId,
+        expirationSeconds: (
+          expirationSeconds || DEFAULT_TURNKEY_REFRESH_SECONDS
+        )?.toString(),
       })
 
       return response?.data

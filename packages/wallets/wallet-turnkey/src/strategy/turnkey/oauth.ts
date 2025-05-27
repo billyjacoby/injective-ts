@@ -7,7 +7,10 @@ import { sha256 } from '@injectivelabs/sdk-ts'
 import type { TurnkeyOauthLoginResponse } from '../types.js'
 import type { TurnkeyIframeClient } from '@turnkey/sdk-browser'
 import { type HttpRestClient } from '@injectivelabs/utils'
-import { TURNKEY_OAUTH_PATH } from '../consts.js'
+import {
+  DEFAULT_TURNKEY_REFRESH_SECONDS,
+  TURNKEY_OAUTH_PATH,
+} from '../consts.js'
 
 export class TurnkeyOauthWallet {
   static async generateOAuthNonce(iframeClient: TurnkeyIframeClient) {
@@ -34,13 +37,13 @@ export class TurnkeyOauthWallet {
     oidcToken: string
     client: HttpRestClient
     oauthLoginPath?: string
-    expirationSeconds?: number
     providerName: 'google' | 'apple'
     iframeClient: TurnkeyIframeClient
+    expirationSeconds?: number
   }): Promise<
     { organizationId: string; credentialBundle: string } | undefined
   > {
-    const { client, iframeClient } = args
+    const { client, iframeClient, expirationSeconds } = args
 
     const path = args.oauthLoginPath || TURNKEY_OAUTH_PATH
 
@@ -57,6 +60,9 @@ export class TurnkeyOauthWallet {
         targetPublicKey,
         oidcToken: args.oidcToken,
         providerName: args.providerName,
+        expirationSeconds: (
+          expirationSeconds || DEFAULT_TURNKEY_REFRESH_SECONDS
+        )?.toString(),
       })
 
       return response.data
