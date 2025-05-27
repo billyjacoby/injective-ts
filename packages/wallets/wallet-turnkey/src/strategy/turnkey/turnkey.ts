@@ -235,28 +235,25 @@ export class TurnkeyWallet {
     const expirationSeconds =
       options.expirationSeconds || DEFAULT_TURNKEY_REFRESH_SECONDS
     const iframeClient = await this.getIframeClient()
-
     await iframeClient.injectCredentialBundle(credentialBundle)
     await iframeClient.refreshSession({
       sessionType: SessionType.READ_WRITE,
-      expirationSeconds: options.expirationSeconds,
       targetPublicKey: iframeClient.iframePublicKey,
+      expirationSeconds,
     })
 
-    // If we just logged in, we have the new org ID here and don't need to wait on getSession method
-    if (options.organizationId) {
-      this.organizationId = options.organizationId
-      this.metadata.organizationId = options.organizationId
-    } else {
-      const session = await this.getSession()
-      this.organizationId = session.organizationId
-      this.metadata.organizationId = session.organizationId
+    const session = await this.turnkey?.getSession()
+    if (!session) {
+      throw new WalletException(new Error('Failed to refresh session'))
     }
+
+    this.organizationId = session.organizationId
+    this.metadata.organizationId = session.organizationId
 
     // Refresh the session 2 minutes before it expires
     setTimeout(() => {
       iframeClient.refreshSession({
-        expirationSeconds,
+        expirationSeconds: session?.expiry,
         sessionType: SessionType.READ_WRITE,
         targetPublicKey: iframeClient.iframePublicKey,
       })
@@ -372,7 +369,8 @@ export class TurnkeyWallet {
 
     if (session.session?.token) {
       await this.injectAndRefresh(session.session.token, {
-        expirationSeconds: this.metadata.expirationSeconds,
+        expirationSeconds:
+          this.metadata.expirationSeconds || DEFAULT_TURNKEY_REFRESH_SECONDS,
       })
 
       return session.session.token
