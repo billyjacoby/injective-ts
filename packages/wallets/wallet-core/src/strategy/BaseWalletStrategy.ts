@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events'
+import { EventEmitter } from 'eventemitter3'
 import {
   TxRaw,
   TxResponse,
@@ -28,8 +28,9 @@ import {
 } from '@injectivelabs/wallet-base'
 import { StdSignDoc } from '@keplr-wallet/types'
 import {
-  WalletStrategyEmitterType,
+  WalletStrategyEmitter,
   WalletStrategyEmitterEvents,
+  WalletStrategyEmitterEventType,
 } from '../broadcaster/types.js'
 
 const getInitialWallet = (args: WalletStrategyArguments): Wallet => {
@@ -56,29 +57,6 @@ const getInitialWallet = (args: WalletStrategyArguments): Wallet => {
   return keys[0] as Wallet
 }
 
-class TypedEventEmitter extends EventEmitter {
-  emit<key extends keyof WalletStrategyEmitterEvents>(
-    event: key,
-    payload?: WalletStrategyEmitterEvents[key],
-  ): boolean {
-    return super.emit(event, payload)
-  }
-
-  on<key extends keyof WalletStrategyEmitterEvents>(
-    event: key,
-    listener: (payload?: WalletStrategyEmitterEvents[key]) => void,
-  ): this {
-    return super.on(event, listener)
-  }
-
-  off<key extends keyof WalletStrategyEmitterEvents>(
-    event: key,
-    listener: (payload?: WalletStrategyEmitterEvents[key]) => void,
-  ): this {
-    return super.off(event, listener)
-  }
-}
-
 export default class BaseWalletStrategy implements WalletStrategyInterface {
   public strategies: ConcreteStrategiesArg
 
@@ -90,17 +68,21 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
 
   public wallets?: Wallet[]
 
-  private emitter = new TypedEventEmitter()
-
-  public on = this.emitter.on.bind(this.emitter)
-  public off = this.emitter.off.bind(this.emitter)
-  public emit = this.emitter.emit.bind(this.emitter)
+  private emitter: WalletStrategyEmitter
+  public on: WalletStrategyEmitter['on']
+  public off: WalletStrategyEmitter['off']
+  public emit: WalletStrategyEmitter['emit']
 
   constructor(args: WalletStrategyArguments) {
     this.args = args
     this.strategies = args.strategies
     this.wallet = getInitialWallet(args)
     this.metadata = args.metadata
+
+    this.emitter = new EventEmitter<WalletStrategyEmitterEvents>()
+    this.on = this.emitter.on.bind(this.emitter)
+    this.off = this.emitter.off.bind(this.emitter)
+    this.emit = this.emitter.emit.bind(this.emitter)
   }
 
   public getWallet(): Wallet {
@@ -212,7 +194,7 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
       address,
     )
 
-    this.emit(WalletStrategyEmitterType.TransactionSigned)
+    this.emit(WalletStrategyEmitterEventType.TransactionSigned)
 
     return response
   }
@@ -231,7 +213,7 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
       transaction,
     )
 
-    this.emit(WalletStrategyEmitterType.TransactionSigned)
+    this.emit(WalletStrategyEmitterEventType.TransactionSigned)
 
     return response
   }
@@ -250,7 +232,7 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
 
     const response = await this.getStrategy().signCosmosTransaction(transaction)
 
-    this.emit(WalletStrategyEmitterType.TransactionSigned)
+    this.emit(WalletStrategyEmitterEventType.TransactionSigned)
 
     return response
   }
@@ -262,7 +244,7 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
     if (this.getStrategy().signArbitrary) {
       const response = await this.getStrategy().signArbitrary!(signer, data)
 
-      this.emit(WalletStrategyEmitterType.TransactionSigned)
+      this.emit(WalletStrategyEmitterEventType.TransactionSigned)
 
       return response
     }
@@ -288,7 +270,7 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
     if (this.getStrategy().disconnect) {
       await this.getStrategy().disconnect!()
 
-      this.emit(WalletStrategyEmitterType.WalletStrategyDisconnect)
+      this.emit(WalletStrategyEmitterEventType.WalletStrategyDisconnect)
     }
   }
 

@@ -1,5 +1,5 @@
-import { TxResponse, ChainGrpcTendermintApi } from '@injectivelabs/sdk-ts'
 import { NetworkEndpoints } from '@injectivelabs/networks'
+import { TxResponse, ChainGrpcTendermintApi } from '@injectivelabs/sdk-ts'
 
 export const getTransactionTimeElapsed = async ({
   endpoints,

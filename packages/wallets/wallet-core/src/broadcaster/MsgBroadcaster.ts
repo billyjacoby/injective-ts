@@ -49,7 +49,7 @@ import { ChainId, EthereumChainId } from '@injectivelabs/ts-types'
 import {
   MsgBroadcasterOptions,
   MsgBroadcasterTxOptions,
-  WalletStrategyEmitterType,
+  WalletStrategyEmitterEventType,
   MsgBroadcasterTxOptionsWithAddresses,
 } from './types.js'
 import {
@@ -180,7 +180,7 @@ export class MsgBroadcaster {
     } catch (e) {
       const error = e as any
 
-      walletStrategy.emit(WalletStrategyEmitterType.TransactionFail)
+      walletStrategy.emit(WalletStrategyEmitterEventType.TransactionFail)
 
       if (isThrownException(error)) {
         throw error
@@ -220,7 +220,7 @@ export class MsgBroadcaster {
     } catch (e) {
       const error = e as any
 
-      walletStrategy.emit(WalletStrategyEmitterType.TransactionFail)
+      walletStrategy.emit(WalletStrategyEmitterEventType.TransactionFail)
 
       if (isThrownException(error)) {
         throw error
@@ -260,7 +260,7 @@ export class MsgBroadcaster {
     } catch (e) {
       const error = e as any
 
-      walletStrategy.emit(WalletStrategyEmitterType.TransactionFail)
+      walletStrategy.emit(WalletStrategyEmitterEventType.TransactionFail)
 
       if (isThrownException(error)) {
         throw error
@@ -482,14 +482,14 @@ export class MsgBroadcaster {
       response.txHash,
     )
 
-    walletStrategy.emit(WalletStrategyEmitterType.StartTelemetryToast)
+    walletStrategy.emit(WalletStrategyEmitterEventType.StartTelemetryToast)
 
     const timeElapsed = await getTransactionTimeElapsed({
       endpoints,
       txResponse,
     })
 
-    walletStrategy.emit(WalletStrategyEmitterType.DoneTelemetryToast, {
+    walletStrategy.emit(WalletStrategyEmitterEventType.DoneTelemetryToast, {
       timeElapsed,
       txHash: txResponse?.txHash,
     })
@@ -578,14 +578,14 @@ export class MsgBroadcaster {
         response.txHash,
       )
 
-      walletStrategy.emit(WalletStrategyEmitterType.StartTelemetryToast)
+      walletStrategy.emit(WalletStrategyEmitterEventType.StartTelemetryToast)
 
       const timeElapsed = await getTransactionTimeElapsed({
         endpoints,
         txResponse,
       })
 
-      walletStrategy.emit(WalletStrategyEmitterType.DoneTelemetryToast, {
+      walletStrategy.emit(WalletStrategyEmitterEventType.DoneTelemetryToast, {
         timeElapsed,
         txHash: txResponse?.txHash,
       })
@@ -712,14 +712,14 @@ export class MsgBroadcaster {
         response.txHash,
       )
 
-      walletStrategy.emit(WalletStrategyEmitterType.StartTelemetryToast)
+      walletStrategy.emit(WalletStrategyEmitterEventType.StartTelemetryToast)
 
       const timeElapsed = await getTransactionTimeElapsed({
         endpoints,
         txResponse,
       })
 
-      walletStrategy.emit(WalletStrategyEmitterType.DoneTelemetryToast, {
+      walletStrategy.emit(WalletStrategyEmitterEventType.DoneTelemetryToast, {
         timeElapsed,
         txHash: txResponse?.txHash,
       })
@@ -748,14 +748,14 @@ export class MsgBroadcaster {
       response.txHash,
     )
 
-    walletStrategy.emit(WalletStrategyEmitterType.StartTelemetryToast)
+    walletStrategy.emit(WalletStrategyEmitterEventType.StartTelemetryToast)
 
     const timeElapsed = await getTransactionTimeElapsed({
       endpoints,
       txResponse,
     })
 
-    walletStrategy.emit(WalletStrategyEmitterType.DoneTelemetryToast, {
+    walletStrategy.emit(WalletStrategyEmitterEventType.DoneTelemetryToast, {
       timeElapsed,
       txHash: txResponse?.txHash,
     })
@@ -1028,14 +1028,14 @@ export class MsgBroadcaster {
         response.txHash,
       )
 
-      walletStrategy.emit(WalletStrategyEmitterType.StartTelemetryToast)
+      walletStrategy.emit(WalletStrategyEmitterEventType.StartTelemetryToast)
 
       const timeElapsed = await getTransactionTimeElapsed({
         endpoints,
         txResponse,
       })
 
-      walletStrategy.emit(WalletStrategyEmitterType.DoneTelemetryToast, {
+      walletStrategy.emit(WalletStrategyEmitterEventType.DoneTelemetryToast, {
         timeElapsed,
         txHash: txResponse?.txHash,
       })

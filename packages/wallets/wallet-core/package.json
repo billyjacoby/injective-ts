@@ -63,7 +63,7 @@
     "@injectivelabs/utils": "^1.15.19",
     "@injectivelabs/wallet-base": "^1.15.21",
     "@keplr-wallet/types": "^0.12.159",
-    "events": "^3.3.0"
+    "eventemitter3": "^5.0.1"
   },
   "devDependencies": {
     "shx": "^0.3.3"

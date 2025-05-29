@@ -1,3 +1,4 @@
+import { EventEmitter } from 'eventemitter3'
 import { Msgs } from '@injectivelabs/sdk-ts'
 import { ChainId, EthereumChainId } from '@injectivelabs/ts-types'
 import { Network, NetworkEndpoints } from '@injectivelabs/networks'
@@ -36,7 +37,7 @@ export interface MsgBroadcasterOptions {
   httpHeaders?: Record<string, string>
 }
 
-export enum WalletStrategyEmitterType {
+export enum WalletStrategyEmitterEventType {
   TransactionFail = 'transaction-fail',
   TransactionSigned = 'transaction-signed',
   DoneTelemetryToast = 'done-telemetry-toast',
@@ -45,9 +46,11 @@ export enum WalletStrategyEmitterType {
 }
 
 export type WalletStrategyEmitterEvents = {
-  [WalletStrategyEmitterType.TransactionFail]: Record<string, any>
-  [WalletStrategyEmitterType.TransactionSigned]: Record<string, any>
-  [WalletStrategyEmitterType.DoneTelemetryToast]: Record<string, any>
-  [WalletStrategyEmitterType.StartTelemetryToast]: Record<string, any>
-  [WalletStrategyEmitterType.WalletStrategyDisconnect]: Record<string, any>
+  [WalletStrategyEmitterEventType.TransactionFail]: Record<string, any>
+  [WalletStrategyEmitterEventType.TransactionSigned]: Record<string, any>
+  [WalletStrategyEmitterEventType.DoneTelemetryToast]: Record<string, any>
+  [WalletStrategyEmitterEventType.StartTelemetryToast]: Record<string, any>
+  [WalletStrategyEmitterEventType.WalletStrategyDisconnect]: Record<string, any>
 }
+
+export type WalletStrategyEmitter = EventEmitter<WalletStrategyEmitterEvents>
