@@ -5,8 +5,9 @@ import {
   toUtf8,
   TxGrpcApi,
   TxResponse,
-  DirectSignResponse,
+  isServerSide,
   AminoSignResponse,
+  DirectSignResponse,
 } from '@injectivelabs/sdk-ts'
 import {
   ErrorType,
@@ -19,6 +20,7 @@ import {
   UnspecifiedErrorCode,
   TransactionException,
   TrustWalletException,
+  RainbowWalletException,
 } from '@injectivelabs/exceptions'
 import {
   Wallet,
@@ -31,6 +33,7 @@ import {
   BrowserEip1993Provider,
   ConcreteWalletStrategy,
   ConcreteWalletStrategyArgs,
+  EIP6963AnnounceProviderEvent,
   ConcreteEthereumWalletStrategyArgs,
 } from '@injectivelabs/wallet-base'
 import { sleep, capitalize } from '@injectivelabs/utils'
@@ -38,6 +41,7 @@ import { AccountAddress, EthereumChainId } from '@injectivelabs/ts-types'
 import {
   getBitGetProvider,
   getPhantomProvider,
+  getRainbowProvider,
   getMetamaskProvider,
   getOkxWalletProvider,
   getTrustWalletProvider,
@@ -48,6 +52,7 @@ export class EvmWallet
   implements ConcreteWalletStrategy
 {
   public wallet?: Wallet
+  public evmProviders: Partial<Record<Wallet, BrowserEip1993Provider>> = {}
 
   constructor(
     args: (ConcreteWalletStrategyArgs | ConcreteEthereumWalletStrategyArgs) & {
@@ -62,6 +67,41 @@ export class EvmWallet
           `Evm Wallet for ${capitalize(args.wallet)} is not supported.`,
         ),
       )
+    }
+
+    if (!isServerSide()) {
+      window.addEventListener(
+        'eip6963:announceProvider',
+        (announcement: any) => {
+          const event = announcement as unknown as EIP6963AnnounceProviderEvent
+          const walletName = event.detail.info.name.toLowerCase()
+
+          if (walletName === Wallet.Metamask.toLowerCase()) {
+            this.evmProviders[Wallet.Metamask] = event.detail.provider
+          }
+
+          if (walletName === Wallet.Rainbow.toLowerCase()) {
+            this.evmProviders[Wallet.Rainbow] = event.detail.provider
+          }
+
+          if (walletName === Wallet.Phantom.toLowerCase()) {
+            this.evmProviders[Wallet.Phantom] = event.detail.provider
+          }
+
+          if (walletName === Wallet.OkxWallet.toLowerCase()) {
+            this.evmProviders[Wallet.OkxWallet] = event.detail.provider
+          }
+
+          if (walletName === Wallet.BitGet.toLowerCase()) {
+            this.evmProviders[Wallet.BitGet] = event.detail.provider
+          }
+
+          if (walletName === Wallet.TrustWallet.toLowerCase()) {
+            this.evmProviders[Wallet.TrustWallet] = event.detail.provider
+          }
+        },
+      )
+      window.dispatchEvent(new Event('eip6963:requestProvider'))
     }
 
     this.wallet = args.wallet
@@ -89,6 +129,10 @@ export class EvmWallet
 
     if (this.wallet === Wallet.TrustWallet) {
       return new TrustWalletException(error, context)
+    }
+
+    if (this.wallet === Wallet.Rainbow) {
+      return new RainbowWalletException(error, context)
     }
 
     return new WalletException(error, context)
@@ -360,7 +404,13 @@ export class EvmWallet
   }
 
   private async getEthereum(): Promise<BrowserEip1993Provider> {
-    const provider =
+    const evmProvider = this.evmProviders[this.wallet as Wallet]
+
+    if (evmProvider) {
+      return evmProvider
+    }
+
+    const backUpProvider =
       this.wallet === Wallet.Metamask
         ? await getMetamaskProvider()
         : this.wallet === Wallet.Phantom
@@ -371,9 +421,11 @@ export class EvmWallet
         ? await getOkxWalletProvider()
         : this.wallet === Wallet.TrustWallet
         ? await getTrustWalletProvider()
+        : this.wallet === Wallet.Rainbow
+        ? await getRainbowProvider()
         : undefined
 
-    if (!provider) {
+    if (!backUpProvider) {
       throw this.EvmWalletException(
         new Error(`Please install the ${this.wallet} wallet extension.`),
         {
@@ -384,6 +436,6 @@ export class EvmWallet
       )
     }
 
-    return provider
+    return backUpProvider
   }
 }
