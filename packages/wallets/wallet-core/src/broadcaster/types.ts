@@ -35,3 +35,19 @@ export interface MsgBroadcasterOptions {
   gasBufferCoefficient?: number
   httpHeaders?: Record<string, string>
 }
+
+export enum WalletStrategyEmitterType {
+  TransactionFail = 'transaction-fail',
+  TransactionSigned = 'transaction-signed',
+  DoneTelemetryToast = 'done-telemetry-toast',
+  StartTelemetryToast = 'start-telemetry-toast',
+  WalletStrategyDisconnect = 'wallet-strategy-disconnect',
+}
+
+export type WalletStrategyEmitterEvents = {
+  [WalletStrategyEmitterType.TransactionFail]: Record<string, any>
+  [WalletStrategyEmitterType.TransactionSigned]: Record<string, any>
+  [WalletStrategyEmitterType.DoneTelemetryToast]: Record<string, any>
+  [WalletStrategyEmitterType.StartTelemetryToast]: Record<string, any>
+  [WalletStrategyEmitterType.WalletStrategyDisconnect]: Record<string, any>
+}

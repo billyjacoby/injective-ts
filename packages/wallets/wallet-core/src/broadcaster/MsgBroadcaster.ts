@@ -2,6 +2,7 @@ import {
   TxGrpcApi,
   hexToBuff,
   PublicKey,
+  TxResponse,
   SIGN_DIRECT,
   hexToBase64,
   ofacWallets,
@@ -18,7 +19,6 @@ import {
   getEip712TypedDataV2,
   IndexerGrpcWeb3GwApi,
   ChainGrpcTendermintApi,
-  TxResponseWithElapsedtime,
   createTransactionWithSigners,
   createTxRawFromSigResponse,
   getGasPriceBasedOnMessage,
@@ -49,9 +49,13 @@ import { ChainId, EthereumChainId } from '@injectivelabs/ts-types'
 import {
   MsgBroadcasterOptions,
   MsgBroadcasterTxOptions,
+  WalletStrategyEmitterType,
   MsgBroadcasterTxOptionsWithAddresses,
 } from './types.js'
-import { checkIfTxRunOutOfGas } from '../utils/index.js'
+import {
+  checkIfTxRunOutOfGas,
+  getTransactionTimeElapsed,
+} from '../utils/index.js'
 import {
   Wallet,
   isCosmosWallet,
@@ -176,6 +180,8 @@ export class MsgBroadcaster {
     } catch (e) {
       const error = e as any
 
+      walletStrategy.emit(WalletStrategyEmitterType.TransactionFail)
+
       if (isThrownException(error)) {
         throw error
       }
@@ -192,7 +198,7 @@ export class MsgBroadcaster {
    * @param tx
    * @returns {string} transaction hash
    */
-  async broadcastV2(tx: MsgBroadcasterTxOptions) {
+  async broadcastV2(tx: MsgBroadcasterTxOptions): Promise<TxResponse> {
     const { walletStrategy } = this
 
     const txWithAddresses = {
@@ -214,9 +220,7 @@ export class MsgBroadcaster {
     } catch (e) {
       const error = e as any
 
-      walletStrategy.emit('transaction-fail', {
-        isTelemetry: true,
-      })
+      walletStrategy.emit(WalletStrategyEmitterType.TransactionFail)
 
       if (isThrownException(error)) {
         throw error
@@ -235,7 +239,7 @@ export class MsgBroadcaster {
    */
   async broadcastWithFeeDelegation(
     tx: MsgBroadcasterTxOptions,
-  ): Promise<TxResponseWithElapsedtime> {
+  ): Promise<TxResponse> {
     const { walletStrategy } = this
     const txWithAddresses = {
       ...tx,
@@ -256,9 +260,7 @@ export class MsgBroadcaster {
     } catch (e) {
       const error = e as any
 
-      walletStrategy.emit('transaction-fail', {
-        isTelemetry: true,
-      })
+      walletStrategy.emit(WalletStrategyEmitterType.TransactionFail)
 
       if (isThrownException(error)) {
         throw error
@@ -337,8 +339,6 @@ export class MsgBroadcaster {
       tx.ethereumAddress,
     )
 
-    walletStrategy.emit('transaction-signed')
-
     const pubKeyOrSignatureDerivedPubKey = getEthereumWalletPubKey({
       pubKey: baseAccount.pubKey?.key,
       eip712TypedData,
@@ -383,7 +383,9 @@ export class MsgBroadcaster {
    * @param tx The transaction that needs to be broadcasted
    * @returns transaction hash
    */
-  private async broadcastEip712V2(tx: MsgBroadcasterTxOptionsWithAddresses) {
+  private async broadcastEip712V2(
+    tx: MsgBroadcasterTxOptionsWithAddresses,
+  ): Promise<TxResponse> {
     const { chainId, endpoints, txTimeout, walletStrategy, ethereumChainId } =
       this
     const msgs = Array.isArray(tx.msgs) ? tx.msgs : [tx.msgs]
@@ -443,12 +445,6 @@ export class MsgBroadcaster {
       tx.ethereumAddress,
     )
 
-    walletStrategy.emit('transaction-signed', {
-      isTelemetry: true,
-    })
-
-    const startTime = Date.now()
-
     const pubKeyOrSignatureDerivedPubKey = getEthereumWalletPubKey({
       pubKey: baseAccount.pubKey?.key,
       eip712TypedData,
@@ -475,18 +471,32 @@ export class MsgBroadcaster {
     /** Append Signatures */
     txRawEip712.signatures = [hexToBuff(signature)]
 
-    const txResponse = await walletStrategy.sendTransaction(txRawEip712, {
+    const response = await walletStrategy.sendTransaction(txRawEip712, {
       chainId,
       endpoints,
       txTimeout,
       address: tx.injectiveAddress,
     })
 
-    const endTime = Date.now()
+    const txResponse = await new TxGrpcApi(endpoints.grpc).fetchTxPoll(
+      response.txHash,
+    )
+
+    walletStrategy.emit(WalletStrategyEmitterType.StartTelemetryToast)
+
+    const timeElapsed = await getTransactionTimeElapsed({
+      endpoints,
+      txResponse,
+    })
+
+    walletStrategy.emit(WalletStrategyEmitterType.DoneTelemetryToast, {
+      timeElapsed,
+      txHash: txResponse?.txHash,
+    })
 
     return {
-      txResponse,
-      timeElapsed: endTime - startTime,
+      ...response,
+      timeElapsed,
     }
   }
 
@@ -499,7 +509,7 @@ export class MsgBroadcaster {
    */
   private async broadcastEip712WithFeeDelegation(
     tx: MsgBroadcasterTxOptionsWithAddresses,
-  ): Promise<TxResponseWithElapsedtime> {
+  ): Promise<TxResponse> {
     const {
       txTimeout,
       endpoints,
@@ -562,46 +572,26 @@ export class MsgBroadcaster {
       })
 
     try {
-      walletStrategy.emit('transaction-signed', {
-        isTelemetry: true,
-      })
-
-      const startTime = Date.now()
-
       const response = await broadcast()
 
       const txResponse = await new TxGrpcApi(endpoints.grpc).fetchTxPoll(
         response.txHash,
       )
 
-      const endTime = Date.now()
-      const endTimeTx = new Date(txResponse.timestamp)
+      walletStrategy.emit(WalletStrategyEmitterType.StartTelemetryToast)
 
-      const timeElapsed = endTime - startTime
-      const timeElapsedTx = endTimeTx.getTime() - startTime
+      const timeElapsed = await getTransactionTimeElapsed({
+        endpoints,
+        txResponse,
+      })
 
-      const txBlock = await new ChainGrpcTendermintApi(
-        endpoints.grpc,
-      ).fetchBlock(txResponse.height)
-
-      const endTimeTxBlock = new Date(txBlock?.header?.time || '')
-      const timeElapsedTxBlock = endTimeTxBlock.getTime() - startTime
-
-      console.log('broadcastEip712WithFeeDelegation', {
+      walletStrategy.emit(WalletStrategyEmitterType.DoneTelemetryToast, {
         timeElapsed,
-        timeElapsedTx,
-        timeElapsedTxBlock,
-        others: {
-          startTime,
-          endTime,
-          response,
-          txResponse,
-          txResponseTime: txResponse.timestamp,
-        },
+        txHash: txResponse?.txHash,
       })
 
       return {
-        txResponse,
+        ...txResponse,
         timeElapsed,
       }
     } catch (e) {
@@ -647,7 +637,9 @@ export class MsgBroadcaster {
    * @param tx The transaction that needs to be broadcasted
    * @returns transaction hash
    */
-  private async broadcastDirectSign(tx: MsgBroadcasterTxOptionsWithAddresses) {
+  private async broadcastDirectSign(
+    tx: MsgBroadcasterTxOptionsWithAddresses,
+  ): Promise<TxResponse> {
     const { walletStrategy, txTimeout, endpoints, chainId } = this
     const msgs = Array.isArray(tx.msgs) ? tx.msgs : [tx.msgs]
 
@@ -705,28 +697,36 @@ export class MsgBroadcaster {
         address: tx.injectiveAddress,
       })
 
-      walletStrategy.emit('transaction-signed', {
-        isTelemetry: true,
-      })
-
-      const startTime = Date.now()
-
       txRaw.signatures = [
         Buffer.from(signResponse.signature.signature, 'base64'),
       ]
 
-      const txResponse = await walletStrategy.sendTransaction(txRaw, {
+      const response = await walletStrategy.sendTransaction(txRaw, {
         chainId,
         endpoints,
         txTimeout,
         address: tx.injectiveAddress,
       })
 
-      const endTime = Date.now()
+      const txResponse = await new TxGrpcApi(endpoints.grpc).fetchTxPoll(
+        response.txHash,
+      )
+
+      walletStrategy.emit(WalletStrategyEmitterType.StartTelemetryToast)
+
+      const timeElapsed = await getTransactionTimeElapsed({
+        endpoints,
+        txResponse,
+      })
+
+      walletStrategy.emit(WalletStrategyEmitterType.DoneTelemetryToast, {
+        timeElapsed,
+        txHash: txResponse?.txHash,
+      })
 
       return {
-        txResponse,
-        timeElapsed: endTime - startTime,
+        ...response,
+        timeElapsed,
       }
     }
 
@@ -737,16 +737,33 @@ export class MsgBroadcaster {
       accountNumber: baseAccount.accountNumber,
     })) as DirectSignResponse
 
-    walletStrategy.emit('transaction-signed', {
-      isTelemetry: true,
-    })
-
-    return walletStrategy.sendTransaction(directSignResponse, {
+    const response = await walletStrategy.sendTransaction(directSignResponse, {
       chainId,
       endpoints,
       txTimeout,
       address: tx.injectiveAddress,
     })
+
+    const txResponse = await new TxGrpcApi(endpoints.grpc).fetchTxPoll(
+      response.txHash,
+    )
+
+    walletStrategy.emit(WalletStrategyEmitterType.StartTelemetryToast)
+
+    const timeElapsed = await getTransactionTimeElapsed({
+      endpoints,
+      txResponse,
+    })
+
+    walletStrategy.emit(WalletStrategyEmitterType.DoneTelemetryToast, {
+      timeElapsed,
+      txHash: txResponse?.txHash,
+    })
+
+    return {
+      ...response,
+      timeElapsed,
+    }
   }
 
   /**
@@ -824,8 +841,6 @@ export class MsgBroadcaster {
       }),
     })
 
-    walletStrategy.emit('transaction-signed')
-
     /**
      * Create TxRaw from the signed tx that we
      * get as a response in case the user changed the fee/memo
@@ -889,7 +904,7 @@ export class MsgBroadcaster {
    */
   private async broadcastDirectSignWithFeeDelegation(
     tx: MsgBroadcasterTxOptionsWithAddresses,
-  ) {
+  ): Promise<TxResponse> {
     const {
       options,
       chainId,
@@ -982,10 +997,6 @@ export class MsgBroadcaster {
       accountNumber: baseAccount.accountNumber,
     })) as DirectSignResponse
 
-    walletStrategy.emit('transaction-signed', {
-      isTelemetry: true,
-    })
-
     const transactionApi = new IndexerGrpcWeb3GwApi(
       endpoints.web3gw || endpoints.indexer,
     )
@@ -1006,8 +1017,6 @@ export class MsgBroadcaster {
       })
 
     try {
-      const startTime = Date.now()
-
       const response = await broadcast()
 
       // Re-enable tx gas check removed above
@@ -1019,35 +1028,20 @@ export class MsgBroadcaster {
         response.txHash,
       )
 
-      const endTime = Date.now()
+      walletStrategy.emit(WalletStrategyEmitterType.StartTelemetryToast)
 
-      const endTimeTx = new Date(txResponse.timestamp)
+      const timeElapsed = await getTransactionTimeElapsed({
+        endpoints,
+        txResponse,
+      })
 
-      const timeElapsed = endTime - startTime
-      const timeElapsedTx = endTimeTx.getTime() - startTime
-
-      const txBlock = await new ChainGrpcTendermintApi(
-        endpoints.grpc,
-      ).fetchBlock(txResponse.height)
-
-      const endTimeTxBlock = new Date(txBlock?.header?.time || '')
-      const timeElapsedTxBlock = endTimeTxBlock.getTime() - startTime
-
-      console.log('broadcastDirectSignWithFeeDelegation', {
+      walletStrategy.emit(WalletStrategyEmitterType.DoneTelemetryToast, {
         timeElapsed,
-        timeElapsedTx,
-        timeElapsedTxBlock,
-        others: {
-          startTime,
-          endTime,
-          response,
-          txResponse,
-          txResponseTime: txResponse.timestamp,
-        },
+        txHash: txResponse?.txHash,
       })
 
       return {
-        txResponse,
+        ...txResponse,
         timeElapsed,
       }
     } catch (e) {
