@@ -19,7 +19,7 @@ import {
   WalletErrorActionModule,
 } from '@injectivelabs/exceptions'
 import { capitalize } from '@injectivelabs/utils'
-import { BroadcastMode } from '@cosmjs/launchpad'
+import { BroadcastMode } from '@keplr-wallet/types'
 import { CosmosTxV1Beta1Tx } from '@injectivelabs/sdk-ts'
 import { Wallet } from '@injectivelabs/wallet-base'
 import { SigningStargateClient, StdFee } from '@cosmjs/stargate'
