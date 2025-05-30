@@ -19,9 +19,8 @@ import {
   WalletErrorActionModule,
 } from '@injectivelabs/exceptions'
 import { capitalize } from '@injectivelabs/utils'
-import { BroadcastMode } from '@keplr-wallet/types'
+import { Wallet, BroadcastMode } from '@injectivelabs/wallet-base'
 import { CosmosTxV1Beta1Tx } from '@injectivelabs/sdk-ts'
-import { Wallet } from '@injectivelabs/wallet-base'
 import { SigningStargateClient, StdFee } from '@cosmjs/stargate'
 import type { EncodeObject, OfflineDirectSigner } from '@cosmjs/proto-signing'
 
