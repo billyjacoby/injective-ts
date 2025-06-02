@@ -132,10 +132,12 @@ export enum MsgType {
   MsgCreateDerivativeLimitOrder = 'injective.exchange.v1beta1.MsgCreateDerivativeLimitOrder',
   MsgBatchCancelDerivativeOrders = 'injective.exchange.v1beta1.MsgBatchCancelDerivativeOrders',
   MsgCreateDerivativeMarketOrder = 'injective.exchange.v1beta1.MsgCreateDerivativeMarketOrder',
+  MsgInstantPerpetualMarketLaunch = 'injective.exchange.v1beta1.MsgInstantPerpetualMarketLaunch',
   MsgCreateBinaryOptionsLimitOrder = 'injective.exchange.v1beta1.MsgCreateBinaryOptionsLimitOrder',
   MsgAdminUpdateBinaryOptionsMarket = 'injective.exchange.v1beta1.MsgAdminUpdateBinaryOptionsMarket',
   MsgBatchCancelBinaryOptionsOrders = 'injective.exchange.v1beta1.MsgBatchCancelBinaryOptionsOrders',
   MsgCreateBinaryOptionsMarketOrder = 'injective.exchange.v1beta1.MsgCreateBinaryOptionsMarketOrder',
+  MsgInstantExpiryFuturesMarketLaunch = 'injective.exchange.v1beta1.MsgInstantExpiryFuturesMarketLaunch',
   MsgBatchCreateDerivativeLimitOrders = 'injective.exchange.v1beta1.MsgBatchCreateDerivativeLimitOrders',
   MsgInstantBinaryOptionsMarketLaunch = 'injective.exchange.v1beta1.MsgInstantBinaryOptionsMarketLaunch',
 
