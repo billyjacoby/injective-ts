@@ -9,7 +9,6 @@ jobs:
   publish:
     if: true
     runs-on: ubuntu-latest
-
     permissions: write-all
 
     steps:
@@ -62,97 +61,6 @@ jobs:
           SLACK_API: ${{ secrets.SLACK_API }}
           GIT_LATEST_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
 
-  package-bump-hub:
-    name: 'Package bump hub'
-    runs-on: ubuntu-latest
-    needs: publish
-
-    steps:
-      - name: Package bump Hub
-        uses: InjectiveLabs/github-package-bump@master
-        with:
-          gh_token: ${{ secrets.GH_TOKEN }}
-          repository_url: injectiveLabs/injective-hub
-          repository_branch: dev
-
-  package-bump-helix:
-    name: 'Package bump Helix'
-    runs-on: ubuntu-latest
-    needs: publish
-
-    steps:
-      - name: Package bump Helix
-        uses: InjectiveLabs/github-package-bump@master
-        with:
-          gh_token: ${{ secrets.GH_TOKEN }}
-          repository_url: injectiveLabs/injective-helix
-          repository_branch: dev
-
-  package-bump-bridge:
-    name: 'Package bump Bridge'
-    runs-on: ubuntu-latest
-    needs: publish
-
-    steps:
-      - name: Package bump Bridge
-        uses: InjectiveLabs/github-package-bump@master
-        with:
-          gh_token: ${{ secrets.GH_TOKEN }}
-          repository_url: injectiveLabs/injective-bridge
-          repository_branch: dev
-
-  package-bump-explorer:
-    name: 'Package bump Explorer'
-    runs-on: ubuntu-latest
-    needs: publish
-
-    steps:
-      - name: Package bump Explorer
-        uses: InjectiveLabs/github-package-bump@master
-        with:
-          gh_token: ${{ secrets.GH_TOKEN }}
-          repository_url: injectiveLabs/injective-explorer
-          repository_branch: dev
-
-  package-bump-trading-ui:
-    name: 'Package bump Trading UI'
-    runs-on: ubuntu-latest
-    needs: publish
-
-    steps:
-      - name: Package bump Trading UI
-        uses: InjectiveLabs/github-package-bump@master
-        with:
-          gh_token: ${{ secrets.GH_TOKEN }}
-          repository_url: injectiveLabs/injective-trading-ui
-          repository_branch: master
-
-  package-bump-mito:
-    name: 'Package bump Mito'
-    runs-on: ubuntu-latest
-    needs: publish
-
-    steps:
-      - name: Package bump Mito
-        uses: InjectiveLabs/github-package-bump@master
-        with:
-          gh_token: ${{ secrets.GH_TOKEN }}
-          repository_url: mitoFinance/mito-ui
-          repository_branch: dev
-
-  package-bump-ui-api:
-    name: 'Package bump UI API'
-    runs-on: ubuntu-latest
-    needs: publish
-
-    steps:
-      - name: Package bump UI API
-        uses: InjectiveLabs/github-package-bump@master
-        with:
-          gh_token: ${{ secrets.GH_TOKEN }}
-          repository_url: injectiveLabs/injective-ui-api
-          repository_branch: staging
-
   package-bump-layer:
     name: 'Package bump layer'
     runs-on: ubuntu-latest
@@ -167,10 +75,101 @@ jobs:
           repository_url: injectiveLabs/injective-ui
           repository_branch: master
 
+  package-bump-hub:
+    name: 'Package bump hub'
+    runs-on: ubuntu-latest
+    needs: package-bump-layer
+
+    steps:
+      - name: Package bump Hub
+        uses: InjectiveLabs/github-package-bump@master
+        with:
+          gh_token: ${{ secrets.GH_TOKEN }}
+          repository_url: injectiveLabs/injective-hub
+          repository_branch: dev
+
+  package-bump-helix:
+    name: 'Package bump Helix'
+    runs-on: ubuntu-latest
+    needs: package-bump-layer
+
+    steps:
+      - name: Package bump Helix
+        uses: InjectiveLabs/github-package-bump@master
+        with:
+          gh_token: ${{ secrets.GH_TOKEN }}
+          repository_url: injectiveLabs/injective-helix
+          repository_branch: dev
+
+  # package-bump-bridge:
+  #   name: 'Package bump Bridge'
+  #   runs-on: ubuntu-latest
+  #   needs: package-bump-layer
+
+  #   steps:
+  #     - name: Package bump Bridge
+  #       uses: InjectiveLabs/github-package-bump@master
+  #       with:
+  #         gh_token: ${{ secrets.GH_TOKEN }}
+  #         repository_url: injectiveLabs/injective-bridge
+  #         repository_branch: dev
+
+  package-bump-explorer:
+    name: 'Package bump Explorer'
+    runs-on: ubuntu-latest
+    needs: package-bump-layer
+
+    steps:
+      - name: Package bump Explorer
+        uses: InjectiveLabs/github-package-bump@master
+        with:
+          gh_token: ${{ secrets.GH_TOKEN }}
+          repository_url: injectiveLabs/injective-explorer
+          repository_branch: dev
+
+  package-bump-trading-ui:
+    name: 'Package bump Trading UI'
+    runs-on: ubuntu-latest
+    needs: package-bump-layer
+
+    steps:
+      - name: Package bump Trading UI
+        uses: InjectiveLabs/github-package-bump@master
+        with:
+          gh_token: ${{ secrets.GH_TOKEN }}
+          repository_url: injectiveLabs/injective-trading-ui
+          repository_branch: master
+
+  package-bump-mito:
+    name: 'Package bump Mito'
+    runs-on: ubuntu-latest
+    needs: package-bump-layer
+
+    steps:
+      - name: Package bump Mito
+        uses: InjectiveLabs/github-package-bump@master
+        with:
+          gh_token: ${{ secrets.GH_TOKEN }}
+          repository_url: mitoFinance/mito-ui
+          repository_branch: dev
+
+  package-bump-ui-api:
+    name: 'Package bump UI API'
+    runs-on: ubuntu-latest
+    needs: package-bump-layer
+
+    steps:
+      - name: Package bump UI API
+        uses: InjectiveLabs/github-package-bump@master
+        with:
+          gh_token: ${{ secrets.GH_TOKEN }}
+          repository_url: injectiveLabs/injective-ui-api
+          repository_branch: staging
+
   package-bump-admin-ui:
     name: 'Package bump Admin UI'
     runs-on: ubuntu-latest
-    needs: publish
+    needs: package-bump-layer
 
     steps:
       - name: Package bump Admin UI

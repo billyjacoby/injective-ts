@@ -1,5 +1,14 @@
 import { WalletErrorActionModule } from '@injectivelabs/exceptions'
 
+export enum BroadcastMode {
+  /** Return after tx commit */
+  Block = 'block',
+  /** Return after CheckTx */
+  Sync = 'sync',
+  /** Return right away */
+  Async = 'async',
+}
+
 export enum Wallet {
   Leap = 'leap',
   Keplr = 'keplr',
