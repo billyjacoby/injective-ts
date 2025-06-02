@@ -1,17 +1,18 @@
-import { GrpcUnaryRequestException } from './GrpcUnaryRequestException.js'
-import { HttpRequestException } from './HttpRequestException.js'
 import { Web3Exception } from './Web3Exception.js'
-import { GeneralException } from './GeneralException.js'
 import { LedgerException } from './LedgerException.js'
-import { LedgerCosmosException } from './LedgerCosmosException.js'
-import { MetamaskException } from './MetamaskException.js'
-import { TrustWalletException } from './TrustWalletException.js'
-import { OkxWalletException } from './OkxWalletException.js'
 import { TrezorException } from './TrezorException.js'
-import { CosmosWalletException } from './CosmosWalletException.js'
-import { TransactionException } from './TransactionException.js'
 import { WalletException } from './WalletException.js'
 import { BitGetException } from './BitGetException.js'
+import { GeneralException } from './GeneralException.js'
+import { MetamaskException } from './MetamaskException.js'
+import { OkxWalletException } from './OkxWalletException.js'
+import { HttpRequestException } from './HttpRequestException.js'
+import { TrustWalletException } from './TrustWalletException.js'
+import { TransactionException } from './TransactionException.js'
+import { LedgerCosmosException } from './LedgerCosmosException.js'
+import { CosmosWalletException } from './CosmosWalletException.js'
+import { RainbowWalletException } from './RainbowWalletException.js'
+import { GrpcUnaryRequestException } from './GrpcUnaryRequestException.js'
 import { TurnkeyWalletSessionException } from './TurnkeyWalletSessionException.js'
 
 export {
@@ -19,15 +20,16 @@ export {
   LedgerException,
   TrezorException,
   WalletException,
-  GeneralException,
   BitGetException,
+  GeneralException,
   MetamaskException,
+  OkxWalletException,
   TransactionException,
   TrustWalletException,
-  OkxWalletException,
   HttpRequestException,
   LedgerCosmosException,
   CosmosWalletException,
+  RainbowWalletException,
   GrpcUnaryRequestException,
   TurnkeyWalletSessionException,
 }

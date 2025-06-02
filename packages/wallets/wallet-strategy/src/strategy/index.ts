@@ -96,6 +96,11 @@ const createStrategy = ({
         ...ethWalletArgs,
         wallet: Wallet.BitGet,
       })
+    case Wallet.Rainbow:
+      return new EvmWalletStrategy({
+        ...ethWalletArgs,
+        wallet: Wallet.Rainbow,
+      })
     case Wallet.WalletConnect:
       if (!args.metadata?.walletConnect?.projectId) {
         return undefined
@@ -122,11 +127,12 @@ const createStrategy = ({
       return new MagicStrategy(args)
     case Wallet.Turnkey:
       if (
-        !args.metadata?.turnkey?.defaultOrganizationId ||
-        !args.metadata?.turnkey?.iframeContainerId
+        !args.metadata?.turnkey?.iframeContainerId ||
+        !args.metadata?.turnkey?.defaultOrganizationId
       ) {
         return undefined
       }
+
       return new TurnkeyWalletStrategy(ethWalletArgs)
     default:
       return undefined
