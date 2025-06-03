@@ -1,5 +1,5 @@
 import { BECH32_PUBKEY_ACC_PREFIX, decompressPubKey } from '../../utils/index.js'
-import { bech32 } from 'bech32'
+import { bech32 } from '@scure/base'
 import { toBuffer } from 'ethereumjs-util'
 import secp256k1 from 'secp256k1'
 import { Address } from './Address.js'
