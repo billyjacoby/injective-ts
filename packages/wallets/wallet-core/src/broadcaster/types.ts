@@ -40,17 +40,23 @@ export interface MsgBroadcasterOptions {
 export enum WalletStrategyEmitterEventType {
   TransactionFail = 'transaction-fail',
   TransactionSigned = 'transaction-signed',
-  DoneTelemetryToast = 'done-telemetry-toast',
-  StartTelemetryToast = 'start-telemetry-toast',
+  TransactionSignStart = 'transaction-sign-start',
+  TransactionBroadcastEnd = 'transaction-broadcast-end',
   WalletStrategyDisconnect = 'wallet-strategy-disconnect',
+  TransactionBroadcastStart = 'transaction-broadcast-start',
+  TransactionPreparationEnd = 'transaction-preparation-end',
+  TransactionPreparationStart = 'transaction-preparation-start',
 }
 
 export type WalletStrategyEmitterEvents = {
-  [WalletStrategyEmitterEventType.TransactionFail]: Record<string, any>
-  [WalletStrategyEmitterEventType.TransactionSigned]: Record<string, any>
-  [WalletStrategyEmitterEventType.DoneTelemetryToast]: Record<string, any>
-  [WalletStrategyEmitterEventType.StartTelemetryToast]: Record<string, any>
-  [WalletStrategyEmitterEventType.WalletStrategyDisconnect]: Record<string, any>
+  [WalletStrategyEmitterEventType.TransactionFail]: Record<string, any>,
+  [WalletStrategyEmitterEventType.TransactionSigned]: Record<string, any>,
+  [WalletStrategyEmitterEventType.TransactionSignStart]: Record<string, any>,
+  [WalletStrategyEmitterEventType.TransactionBroadcastEnd]: Record<string, any>,
+  [WalletStrategyEmitterEventType.WalletStrategyDisconnect]: Record<string, any>,
+  [WalletStrategyEmitterEventType.TransactionBroadcastStart]: Record<string, any>,
+  [WalletStrategyEmitterEventType.TransactionPreparationEnd]: Record<string, any>,
+  [WalletStrategyEmitterEventType.TransactionPreparationStart]: Record<string, any>,
 }
 
 export type WalletStrategyEmitter = EventEmitter<WalletStrategyEmitterEvents>

@@ -52,10 +52,7 @@ import {
   WalletStrategyEmitterEventType,
   MsgBroadcasterTxOptionsWithAddresses,
 } from './types.js'
-import {
-  checkIfTxRunOutOfGas,
-  getTransactionTimeElapsed,
-} from '../utils/index.js'
+import { checkIfTxRunOutOfGas } from '../utils/index.js'
 import {
   Wallet,
   isCosmosWallet,
@@ -425,6 +422,10 @@ export class MsgBroadcaster {
       stdFee = simulatedStdFee
     }
 
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationStart,
+    )
+
     /** EIP712 for signing on Ethereum wallets */
     const eip712TypedData = getEip712TypedDataV2({
       msgs,
@@ -439,6 +440,10 @@ export class MsgBroadcaster {
       ethereumChainId,
     })
 
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationEnd,
+    )
+
     /** Signing on Ethereum */
     const signature = await walletStrategy.signEip712TypedData(
       JSON.stringify(eip712TypedData),
@@ -450,6 +455,10 @@ export class MsgBroadcaster {
       eip712TypedData,
       signature,
     })
+
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionBroadcastStart,
+    )
 
     const { txRaw } = createTransaction({
       message: msgs,
@@ -478,26 +487,9 @@ export class MsgBroadcaster {
       address: tx.injectiveAddress,
     })
 
-    const txResponse = await new TxGrpcApi(endpoints.grpc).fetchTxPoll(
-      response.txHash,
-    )
+    walletStrategy.emit(WalletStrategyEmitterEventType.TransactionBroadcastEnd)
 
-    walletStrategy.emit(WalletStrategyEmitterEventType.StartTelemetryToast)
-
-    const timeElapsed = await getTransactionTimeElapsed({
-      endpoints,
-      txResponse,
-    })
-
-    walletStrategy.emit(WalletStrategyEmitterEventType.DoneTelemetryToast, {
-      timeElapsed,
-      txHash: txResponse?.txHash,
-    })
-
-    return {
-      ...response,
-      timeElapsed,
-    }
+    return await new TxGrpcApi(endpoints.grpc).fetchTxPoll(response.txHash)
   }
 
   /**
@@ -548,6 +540,10 @@ export class MsgBroadcaster {
         .toNumber()
     }
 
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationStart,
+    )
+
     const prepareTxResponse = await transactionApi.prepareTxRequest({
       timeoutHeight,
       memo: tx.memo,
@@ -557,6 +553,10 @@ export class MsgBroadcaster {
       gasLimit: getGasPriceBasedOnMessage(msgs),
       estimateGas: simulateTx,
     })
+
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationEnd,
+    )
 
     const signature = await walletStrategy.signEip712TypedData(
       prepareTxResponse.data,
@@ -572,28 +572,17 @@ export class MsgBroadcaster {
       })
 
     try {
-      const response = await broadcast()
-
-      const txResponse = await new TxGrpcApi(endpoints.grpc).fetchTxPoll(
-        response.txHash,
+      walletStrategy.emit(
+        WalletStrategyEmitterEventType.TransactionBroadcastStart,
       )
 
-      walletStrategy.emit(WalletStrategyEmitterEventType.StartTelemetryToast)
+      const response = await broadcast()
 
-      const timeElapsed = await getTransactionTimeElapsed({
-        endpoints,
-        txResponse,
-      })
+      walletStrategy.emit(
+        WalletStrategyEmitterEventType.TransactionBroadcastEnd,
+      )
 
-      walletStrategy.emit(WalletStrategyEmitterEventType.DoneTelemetryToast, {
-        timeElapsed,
-        txHash: txResponse?.txHash,
-      })
-
-      return {
-        ...txResponse,
-        timeElapsed,
-      }
+      return await new TxGrpcApi(endpoints.grpc).fetchTxPoll(response.txHash)
     } catch (e) {
       const error = e as any
 
@@ -666,6 +655,10 @@ export class MsgBroadcaster {
     const pubKey = await walletStrategy.getPubKey(tx.injectiveAddress)
     const gas = (tx.gas?.gas || getGasPriceBasedOnMessage(msgs)).toString()
 
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationStart,
+    )
+
     /** Prepare the Transaction * */
     const { txRaw } = await this.getTxWithSignersAndStdFee({
       chainId,
@@ -680,6 +673,10 @@ export class MsgBroadcaster {
       },
       fee: getStdFee({ ...tx.gas, gas }),
     })
+
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationEnd,
+    )
 
     /** Ledger using Cosmos app only allows signing amino docs */
     if (isCosmosAminoOnlyWallet(walletStrategy.wallet)) {
@@ -701,6 +698,10 @@ export class MsgBroadcaster {
         Buffer.from(signResponse.signature.signature, 'base64'),
       ]
 
+      walletStrategy.emit(
+        WalletStrategyEmitterEventType.TransactionBroadcastStart,
+      )
+
       const response = await walletStrategy.sendTransaction(txRaw, {
         chainId,
         endpoints,
@@ -708,26 +709,11 @@ export class MsgBroadcaster {
         address: tx.injectiveAddress,
       })
 
-      const txResponse = await new TxGrpcApi(endpoints.grpc).fetchTxPoll(
-        response.txHash,
+      walletStrategy.emit(
+        WalletStrategyEmitterEventType.TransactionBroadcastEnd,
       )
 
-      walletStrategy.emit(WalletStrategyEmitterEventType.StartTelemetryToast)
-
-      const timeElapsed = await getTransactionTimeElapsed({
-        endpoints,
-        txResponse,
-      })
-
-      walletStrategy.emit(WalletStrategyEmitterEventType.DoneTelemetryToast, {
-        timeElapsed,
-        txHash: txResponse?.txHash,
-      })
-
-      return {
-        ...response,
-        timeElapsed,
-      }
+      return await new TxGrpcApi(endpoints.grpc).fetchTxPoll(response.txHash)
     }
 
     const directSignResponse = (await walletStrategy.signCosmosTransaction({
@@ -737,6 +723,10 @@ export class MsgBroadcaster {
       accountNumber: baseAccount.accountNumber,
     })) as DirectSignResponse
 
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionBroadcastStart,
+    )
+
     const response = await walletStrategy.sendTransaction(directSignResponse, {
       chainId,
       endpoints,
@@ -744,26 +734,9 @@ export class MsgBroadcaster {
       address: tx.injectiveAddress,
     })
 
-    const txResponse = await new TxGrpcApi(endpoints.grpc).fetchTxPoll(
-      response.txHash,
-    )
+    walletStrategy.emit(WalletStrategyEmitterEventType.TransactionBroadcastEnd)
 
-    walletStrategy.emit(WalletStrategyEmitterEventType.StartTelemetryToast)
-
-    const timeElapsed = await getTransactionTimeElapsed({
-      endpoints,
-      txResponse,
-    })
-
-    walletStrategy.emit(WalletStrategyEmitterEventType.DoneTelemetryToast, {
-      timeElapsed,
-      txHash: txResponse?.txHash,
-    })
-
-    return {
-      ...response,
-      timeElapsed,
-    }
+    return await new TxGrpcApi(endpoints.grpc).fetchTxPoll(response.txHash)
   }
 
   /**
@@ -990,12 +963,20 @@ export class MsgBroadcaster {
       cosmosWallet.disableGasCheck(chainId)
     }
 
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationStart,
+    )
+
     const directSignResponse = (await walletStrategy.signCosmosTransaction({
       txRaw,
       chainId,
       address: tx.injectiveAddress,
       accountNumber: baseAccount.accountNumber,
     })) as DirectSignResponse
+
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationEnd,
+    )
 
     const transactionApi = new IndexerGrpcWeb3GwApi(
       endpoints.web3gw || endpoints.indexer,
@@ -1017,33 +998,22 @@ export class MsgBroadcaster {
       })
 
     try {
+      walletStrategy.emit(
+        WalletStrategyEmitterEventType.TransactionBroadcastStart,
+      )
+
       const response = await broadcast()
+
+      walletStrategy.emit(
+        WalletStrategyEmitterEventType.TransactionBroadcastEnd,
+      )
 
       // Re-enable tx gas check removed above
       if (canDisableCosmosGasCheck && cosmosWallet.enableGasCheck) {
         cosmosWallet.enableGasCheck(chainId)
       }
 
-      const txResponse = await new TxGrpcApi(endpoints.grpc).fetchTxPoll(
-        response.txHash,
-      )
-
-      walletStrategy.emit(WalletStrategyEmitterEventType.StartTelemetryToast)
-
-      const timeElapsed = await getTransactionTimeElapsed({
-        endpoints,
-        txResponse,
-      })
-
-      walletStrategy.emit(WalletStrategyEmitterEventType.DoneTelemetryToast, {
-        timeElapsed,
-        txHash: txResponse?.txHash,
-      })
-
-      return {
-        ...txResponse,
-        timeElapsed,
-      }
+      return await new TxGrpcApi(endpoints.grpc).fetchTxPoll(response.txHash)
     } catch (e) {
       const error = e as any
 

@@ -117,5 +117,4 @@ export interface TxResponse {
   gasUsed: number
   timestamp: string
   events?: any[]
-  timeElapsed?: number
 }

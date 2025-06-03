@@ -189,6 +189,8 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
       await this.enable()
     }
 
+    this.emit(WalletStrategyEmitterEventType.TransactionSignStart)
+
     const response = await this.getStrategy().signEip712TypedData(
       eip712TypedData,
       address,
@@ -208,6 +210,8 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
         new Error(`You can't sign Cosmos Transaction using ${this.wallet}`),
       )
     }
+
+    this.emit(WalletStrategyEmitterEventType.TransactionSignStart)
 
     const response = await this.getStrategy().signAminoCosmosTransaction(
       transaction,
@@ -230,6 +234,8 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
       )
     }
 
+    this.emit(WalletStrategyEmitterEventType.TransactionSignStart)
+
     const response = await this.getStrategy().signCosmosTransaction(transaction)
 
     this.emit(WalletStrategyEmitterEventType.TransactionSigned)
@@ -242,6 +248,8 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
     data: string | Uint8Array,
   ): Promise<string | void> {
     if (this.getStrategy().signArbitrary) {
+      this.emit(WalletStrategyEmitterEventType.TransactionSignStart)
+
       const response = await this.getStrategy().signArbitrary!(signer, data)
 
       this.emit(WalletStrategyEmitterEventType.TransactionSigned)

@@ -9,7 +9,7 @@ import { GrpcOrderType } from '../../chain/types/exchange.js'
 import { PriceLevel } from './exchange.js'
 import { TokenMeta } from './../../../types/token.js'
 import { InjectiveSpotExchangeRpc } from '@injectivelabs/indexer-proto-ts'
-import { Coin } from '@injectivelabs//ts-types'
+import { Coin } from '@injectivelabs/ts-types'
 
 export interface SpotMarket {
   marketId: string
