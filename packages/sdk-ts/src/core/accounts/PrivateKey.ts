@@ -1,10 +1,9 @@
 import { generateMnemonic } from 'bip39'
-import { Wallet, HDNodeWallet } from 'ethers'
+import { Wallet, HDNodeWallet, Signature, getBytes, concat } from 'ethers'
 import secp256k1 from 'secp256k1'
 import keccak256 from 'keccak256'
 import { PublicKey } from './PublicKey.js'
 import { Address } from './Address.js'
-import * as BytesUtils from '@ethersproject/bytes'
 import { signTypedData, SignTypedDataVersion } from '@metamask/eth-sig-util'
 import {
   DEFAULT_DERIVATION_PATH,
@@ -146,11 +145,9 @@ export class PrivateKey {
 
     const msgHash = keccak256(messageBytes)
     const signature = wallet.signingKey.sign(msgHash)
-    const splitSignature = BytesUtils.splitSignature(signature)
+    const splittedSignature = Signature.from(signature)
 
-    return BytesUtils.arrayify(
-      BytesUtils.concat([splitSignature.r, splitSignature.s]),
-    )
+    return getBytes(concat([splittedSignature.r, splittedSignature.s]))
   }
 
   /**
@@ -180,11 +177,9 @@ export class PrivateKey {
     const { wallet } = this
 
     const signature = wallet.signingKey.sign(messageHashedBytes)
-    const splitSignature = BytesUtils.splitSignature(signature)
+    const splittedSignature = Signature.from(signature)
 
-    return BytesUtils.arrayify(
-      BytesUtils.concat([splitSignature.r, splitSignature.s]),
-    )
+    return getBytes(concat([splittedSignature.r, splittedSignature.s]))
   }
 
   /**
@@ -368,7 +363,9 @@ export class PrivateKey {
       }
 
       const decodedExtension =
-        InjectiveTypesV1Beta1TxExt.ExtensionOptionsWeb3Tx.decode(extension.value)
+        InjectiveTypesV1Beta1TxExt.ExtensionOptionsWeb3Tx.decode(
+          extension.value,
+        )
 
       const ethereumChainId = Number(
         decodedExtension.typedDataChainID,

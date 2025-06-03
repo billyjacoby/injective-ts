@@ -1,4 +1,4 @@
-import { bech32 } from 'bech32'
+import { bech32 } from '@scure/base'
 import { Address as EthereumUtilsAddress } from 'ethereumjs-util'
 import { ErrorType, GeneralException } from '@injectivelabs/exceptions'
 import {
@@ -38,7 +38,7 @@ export class Address {
   ): Address {
     try {
       const address = Buffer.from(
-        bech32.fromWords(bech32.decode(bech).words),
+        bech32.fromWords(bech32.decode(bech as `${string}1${string}`).words),
       ).toString('hex')
       const addressInHex = address.startsWith('0x') ? address : `0x${address}`
       const addressBuffer = EthereumUtilsAddress.fromString(
@@ -48,7 +48,7 @@ export class Address {
 
       return new Address(bech32Address)
     } catch (e) {
-      throw new GeneralException(new Error((e as any)), {
+      throw new GeneralException(new Error(e as any), {
         type: ErrorType.ValidationError,
       })
     }
@@ -122,7 +122,9 @@ export class Address {
   toHex(): string {
     const { bech32Address } = this
     const address = Buffer.from(
-      bech32.fromWords(bech32.decode(bech32Address).words),
+      bech32.fromWords(
+        bech32.decode(bech32Address as `${string}1${string}`).words,
+      ),
     ).toString('hex')
 
     return address.startsWith('0x') ? address : `0x${address}`

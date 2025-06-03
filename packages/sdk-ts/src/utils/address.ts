@@ -1,4 +1,4 @@
-import { bech32 } from 'bech32'
+import { bech32 } from '@scure/base'
 import { Address } from 'ethereumjs-util'
 import keccak256 from 'keccak256'
 
@@ -26,7 +26,9 @@ export const getEthereumAddress = (injectiveAddress: string): string => {
   }
 
   return `0x${Buffer.from(
-    bech32.fromWords(bech32.decode(injectiveAddress).words),
+    bech32.fromWords(
+      bech32.decode(injectiveAddress as `${string}1${string}`).words,
+    ),
   ).toString('hex')}`
 }
 
@@ -52,7 +54,9 @@ export const getInjectiveAddressFromSubaccountId = (
  */
 export const getDefaultSubaccountId = (injectiveAddress: string): string => {
   return `0x${Buffer.from(
-    bech32.fromWords(bech32.decode(injectiveAddress).words),
+    bech32.fromWords(
+      bech32.decode(injectiveAddress as `${string}1${string}`).words,
+    ),
   ).toString('hex')}${'0'.repeat(24)}`
 }
 
@@ -67,7 +71,9 @@ export const getSubaccountId = (
   nonce = 0,
 ): string => {
   return `0x${Buffer.from(
-    bech32.fromWords(bech32.decode(injectiveAddress).words),
+    bech32.fromWords(
+      bech32.decode(injectiveAddress as `${string}1${string}`).words,
+    ),
   ).toString('hex')}${'0'.repeat(23)}${nonce}`
 }
 
@@ -78,7 +84,7 @@ export const getAddressFromInjectiveAddress = (address: string): string => {
   }
 
   return `0x${Buffer.from(
-    bech32.fromWords(bech32.decode(address).words),
+    bech32.fromWords(bech32.decode(address as `${string}1${string}`).words),
   ).toString('hex')}`
 }
 
