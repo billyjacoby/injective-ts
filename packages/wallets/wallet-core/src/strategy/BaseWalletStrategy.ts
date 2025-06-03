@@ -1,3 +1,4 @@
+import { EventEmitter } from 'eventemitter3'
 import {
   TxRaw,
   TxResponse,
@@ -26,6 +27,11 @@ import {
   WalletStrategy as WalletStrategyInterface,
 } from '@injectivelabs/wallet-base'
 import { StdSignDoc } from '@keplr-wallet/types'
+import {
+  WalletStrategyEmitter,
+  WalletStrategyEmitterEvents,
+  WalletStrategyEmitterEventType,
+} from '../broadcaster/types.js'
 
 const getInitialWallet = (args: WalletStrategyArguments): Wallet => {
   if (args.wallet) {
@@ -62,11 +68,21 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
 
   public wallets?: Wallet[]
 
+  private emitter: WalletStrategyEmitter
+  public on: WalletStrategyEmitter['on']
+  public off: WalletStrategyEmitter['off']
+  public emit: WalletStrategyEmitter['emit']
+
   constructor(args: WalletStrategyArguments) {
     this.args = args
     this.strategies = args.strategies
     this.wallet = getInitialWallet(args)
     this.metadata = args.metadata
+
+    this.emitter = new EventEmitter<WalletStrategyEmitterEvents>()
+    this.on = this.emitter.on.bind(this.emitter)
+    this.off = this.emitter.off.bind(this.emitter)
+    this.emit = this.emitter.emit.bind(this.emitter)
   }
 
   public getWallet(): Wallet {
@@ -173,7 +189,16 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
       await this.enable()
     }
 
-    return this.getStrategy().signEip712TypedData(eip712TypedData, address)
+    this.emit(WalletStrategyEmitterEventType.TransactionSignStart)
+
+    const response = await this.getStrategy().signEip712TypedData(
+      eip712TypedData,
+      address,
+    )
+
+    this.emit(WalletStrategyEmitterEventType.TransactionSigned)
+
+    return response
   }
 
   public async signAminoCosmosTransaction(transaction: {
@@ -186,7 +211,15 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
       )
     }
 
-    return this.getStrategy().signAminoCosmosTransaction(transaction)
+    this.emit(WalletStrategyEmitterEventType.TransactionSignStart)
+
+    const response = await this.getStrategy().signAminoCosmosTransaction(
+      transaction,
+    )
+
+    this.emit(WalletStrategyEmitterEventType.TransactionSigned)
+
+    return response
   }
 
   public async signCosmosTransaction(transaction: {
@@ -201,7 +234,13 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
       )
     }
 
-    return this.getStrategy().signCosmosTransaction(transaction)
+    this.emit(WalletStrategyEmitterEventType.TransactionSignStart)
+
+    const response = await this.getStrategy().signCosmosTransaction(transaction)
+
+    this.emit(WalletStrategyEmitterEventType.TransactionSigned)
+
+    return response
   }
 
   public async signArbitrary(
@@ -209,7 +248,13 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
     data: string | Uint8Array,
   ): Promise<string | void> {
     if (this.getStrategy().signArbitrary) {
-      return this.getStrategy().signArbitrary!(signer, data)
+      this.emit(WalletStrategyEmitterEventType.TransactionSignStart)
+
+      const response = await this.getStrategy().signArbitrary!(signer, data)
+
+      this.emit(WalletStrategyEmitterEventType.TransactionSigned)
+
+      return response
     }
   }
 
@@ -232,6 +277,8 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
   public async disconnect() {
     if (this.getStrategy().disconnect) {
       await this.getStrategy().disconnect!()
+
+      this.emit(WalletStrategyEmitterEventType.WalletStrategyDisconnect)
     }
   }
 

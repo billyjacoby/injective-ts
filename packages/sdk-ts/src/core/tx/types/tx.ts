@@ -104,7 +104,6 @@ export interface CreateTransactionResult {
   signBytes: Uint8Array // the sign bytes of the transaction (SignDoc serialized to binary)
   signHashedBytes: Uint8Array // the sign bytes of the transaction (SignDoc serialized to binary) and hashed using keccak256
 }
-
 export interface TxResponse {
   height: number
   txHash: string

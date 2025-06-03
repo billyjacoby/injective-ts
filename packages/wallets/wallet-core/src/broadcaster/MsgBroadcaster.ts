@@ -2,8 +2,8 @@ import {
   TxGrpcApi,
   hexToBuff,
   PublicKey,
-  SIGN_DIRECT,
   TxResponse,
+  SIGN_DIRECT,
   hexToBase64,
   ofacWallets,
   SIGN_EIP712_V2,
@@ -49,9 +49,10 @@ import { ChainId, EthereumChainId } from '@injectivelabs/ts-types'
 import {
   MsgBroadcasterOptions,
   MsgBroadcasterTxOptions,
+  WalletStrategyEmitterEventType,
   MsgBroadcasterTxOptionsWithAddresses,
 } from './types.js'
-import { checkIfTxRunOutOfGas } from './../utils/tx.js'
+import { checkIfTxRunOutOfGas } from '../utils/index.js'
 import {
   Wallet,
   isCosmosWallet,
@@ -176,6 +177,8 @@ export class MsgBroadcaster {
     } catch (e) {
       const error = e as any
 
+      walletStrategy.emit(WalletStrategyEmitterEventType.TransactionFail)
+
       if (isThrownException(error)) {
         throw error
       }
@@ -192,7 +195,7 @@ export class MsgBroadcaster {
    * @param tx
    * @returns {string} transaction hash
    */
-  async broadcastV2(tx: MsgBroadcasterTxOptions) {
+  async broadcastV2(tx: MsgBroadcasterTxOptions): Promise<TxResponse> {
     const { walletStrategy } = this
 
     const txWithAddresses = {
@@ -213,6 +216,8 @@ export class MsgBroadcaster {
         : await this.broadcastEip712V2(txWithAddresses)
     } catch (e) {
       const error = e as any
+
+      walletStrategy.emit(WalletStrategyEmitterEventType.TransactionFail)
 
       if (isThrownException(error)) {
         throw error
@@ -251,6 +256,8 @@ export class MsgBroadcaster {
         : await this.broadcastEip712WithFeeDelegation(txWithAddresses)
     } catch (e) {
       const error = e as any
+
+      walletStrategy.emit(WalletStrategyEmitterEventType.TransactionFail)
 
       if (isThrownException(error)) {
         throw error
@@ -373,7 +380,9 @@ export class MsgBroadcaster {
    * @param tx The transaction that needs to be broadcasted
    * @returns transaction hash
    */
-  private async broadcastEip712V2(tx: MsgBroadcasterTxOptionsWithAddresses) {
+  private async broadcastEip712V2(
+    tx: MsgBroadcasterTxOptionsWithAddresses,
+  ): Promise<TxResponse> {
     const { chainId, endpoints, txTimeout, walletStrategy, ethereumChainId } =
       this
     const msgs = Array.isArray(tx.msgs) ? tx.msgs : [tx.msgs]
@@ -413,6 +422,10 @@ export class MsgBroadcaster {
       stdFee = simulatedStdFee
     }
 
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationStart,
+    )
+
     /** EIP712 for signing on Ethereum wallets */
     const eip712TypedData = getEip712TypedDataV2({
       msgs,
@@ -427,6 +440,10 @@ export class MsgBroadcaster {
       ethereumChainId,
     })
 
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationEnd,
+    )
+
     /** Signing on Ethereum */
     const signature = await walletStrategy.signEip712TypedData(
       JSON.stringify(eip712TypedData),
@@ -438,6 +455,10 @@ export class MsgBroadcaster {
       eip712TypedData,
       signature,
     })
+
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionBroadcastStart,
+    )
 
     const { txRaw } = createTransaction({
       message: msgs,
@@ -459,12 +480,16 @@ export class MsgBroadcaster {
     /** Append Signatures */
     txRawEip712.signatures = [hexToBuff(signature)]
 
-    return walletStrategy.sendTransaction(txRawEip712, {
+    const response = await walletStrategy.sendTransaction(txRawEip712, {
       chainId,
       endpoints,
       txTimeout,
       address: tx.injectiveAddress,
     })
+
+    walletStrategy.emit(WalletStrategyEmitterEventType.TransactionBroadcastEnd)
+
+    return await new TxGrpcApi(endpoints.grpc).fetchTxPoll(response.txHash)
   }
 
   /**
@@ -507,12 +532,17 @@ export class MsgBroadcaster {
       const latestBlock = await new ChainGrpcTendermintApi(
         endpoints.grpc,
       ).fetchLatestBlock()
+
       const latestHeight = latestBlock!.header!.height
 
       timeoutHeight = new BigNumberInBase(latestHeight)
         .plus(txTimeout)
         .toNumber()
     }
+
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationStart,
+    )
 
     const prepareTxResponse = await transactionApi.prepareTxRequest({
       timeoutHeight,
@@ -523,6 +553,10 @@ export class MsgBroadcaster {
       gasLimit: getGasPriceBasedOnMessage(msgs),
       estimateGas: simulateTx,
     })
+
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationEnd,
+    )
 
     const signature = await walletStrategy.signEip712TypedData(
       prepareTxResponse.data,
@@ -538,7 +572,15 @@ export class MsgBroadcaster {
       })
 
     try {
+      walletStrategy.emit(
+        WalletStrategyEmitterEventType.TransactionBroadcastStart,
+      )
+
       const response = await broadcast()
+
+      walletStrategy.emit(
+        WalletStrategyEmitterEventType.TransactionBroadcastEnd,
+      )
 
       return await new TxGrpcApi(endpoints.grpc).fetchTxPoll(response.txHash)
     } catch (e) {
@@ -584,7 +626,9 @@ export class MsgBroadcaster {
    * @param tx The transaction that needs to be broadcasted
    * @returns transaction hash
    */
-  private async broadcastDirectSign(tx: MsgBroadcasterTxOptionsWithAddresses) {
+  private async broadcastDirectSign(
+    tx: MsgBroadcasterTxOptionsWithAddresses,
+  ): Promise<TxResponse> {
     const { walletStrategy, txTimeout, endpoints, chainId } = this
     const msgs = Array.isArray(tx.msgs) ? tx.msgs : [tx.msgs]
 
@@ -611,6 +655,10 @@ export class MsgBroadcaster {
     const pubKey = await walletStrategy.getPubKey(tx.injectiveAddress)
     const gas = (tx.gas?.gas || getGasPriceBasedOnMessage(msgs)).toString()
 
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationStart,
+    )
+
     /** Prepare the Transaction * */
     const { txRaw } = await this.getTxWithSignersAndStdFee({
       chainId,
@@ -625,6 +673,10 @@ export class MsgBroadcaster {
       },
       fee: getStdFee({ ...tx.gas, gas }),
     })
+
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationEnd,
+    )
 
     /** Ledger using Cosmos app only allows signing amino docs */
     if (isCosmosAminoOnlyWallet(walletStrategy.wallet)) {
@@ -646,12 +698,22 @@ export class MsgBroadcaster {
         Buffer.from(signResponse.signature.signature, 'base64'),
       ]
 
-      return walletStrategy.sendTransaction(txRaw, {
+      walletStrategy.emit(
+        WalletStrategyEmitterEventType.TransactionBroadcastStart,
+      )
+
+      const response = await walletStrategy.sendTransaction(txRaw, {
         chainId,
         endpoints,
         txTimeout,
         address: tx.injectiveAddress,
       })
+
+      walletStrategy.emit(
+        WalletStrategyEmitterEventType.TransactionBroadcastEnd,
+      )
+
+      return await new TxGrpcApi(endpoints.grpc).fetchTxPoll(response.txHash)
     }
 
     const directSignResponse = (await walletStrategy.signCosmosTransaction({
@@ -661,12 +723,20 @@ export class MsgBroadcaster {
       accountNumber: baseAccount.accountNumber,
     })) as DirectSignResponse
 
-    return walletStrategy.sendTransaction(directSignResponse, {
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionBroadcastStart,
+    )
+
+    const response = await walletStrategy.sendTransaction(directSignResponse, {
       chainId,
       endpoints,
       txTimeout,
       address: tx.injectiveAddress,
     })
+
+    walletStrategy.emit(WalletStrategyEmitterEventType.TransactionBroadcastEnd)
+
+    return await new TxGrpcApi(endpoints.grpc).fetchTxPoll(response.txHash)
   }
 
   /**
@@ -807,7 +877,7 @@ export class MsgBroadcaster {
    */
   private async broadcastDirectSignWithFeeDelegation(
     tx: MsgBroadcasterTxOptionsWithAddresses,
-  ) {
+  ): Promise<TxResponse> {
     const {
       options,
       chainId,
@@ -893,12 +963,20 @@ export class MsgBroadcaster {
       cosmosWallet.disableGasCheck(chainId)
     }
 
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationStart,
+    )
+
     const directSignResponse = (await walletStrategy.signCosmosTransaction({
       txRaw,
       chainId,
       address: tx.injectiveAddress,
       accountNumber: baseAccount.accountNumber,
     })) as DirectSignResponse
+
+    walletStrategy.emit(
+      WalletStrategyEmitterEventType.TransactionPreparationEnd,
+    )
 
     const transactionApi = new IndexerGrpcWeb3GwApi(
       endpoints.web3gw || endpoints.indexer,
@@ -920,7 +998,15 @@ export class MsgBroadcaster {
       })
 
     try {
+      walletStrategy.emit(
+        WalletStrategyEmitterEventType.TransactionBroadcastStart,
+      )
+
       const response = await broadcast()
+
+      walletStrategy.emit(
+        WalletStrategyEmitterEventType.TransactionBroadcastEnd,
+      )
 
       // Re-enable tx gas check removed above
       if (canDisableCosmosGasCheck && cosmosWallet.enableGasCheck) {
@@ -1073,7 +1159,7 @@ export class MsgBroadcaster {
     const errorKey =
       `${exception.contextModule}-${exception.contextCode}` as keyof typeof this.retriesOnError
 
-    if (!errorsToRetry.includes(errorKey)) {
+    if (!errorsToRetry.includes(errorKey as string)) {
       throw exception
     }
 

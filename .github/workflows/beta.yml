@@ -1,0 +1,57 @@
+name: Publish beta branch
+
+on:
+  push:
+    branches-ignore:
+      - master
+      - dev
+
+jobs:
+  publish-beta:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    if: ${{ contains(github.ref_name, 'beta') || contains(github.event.commits[0].message, 'beta') }}
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 'Use NodeJS 20'
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.17.0'
+
+      - name: 'Setup lerna@6.6.1'
+        run: yarn global add lerna@6.6.1  --ignore-engines
+
+      - name: Set up Git user
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Build dependencies
+        run: |
+          lerna clean --yes
+          node etc/bootstrapEnv
+          yarn install  --ignore-engines
+          yarn build
+
+      - name: 'Setup npm'
+        run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Version and publish
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          lerna version prerelease --preid beta --force-git-tag --no-changelog --yes
+          lerna publish from-git --force-git-tag --dist-tag beta --yes --summary-file
+
+      - name: 'Broadcast published versions on Slack'
+        run: node etc/slack --api=$SLACK_API --actor=$GIT_ACTOR --commit-message=$GIT_LATEST_COMMIT_MESSAGE
+        env:
+          GIT_ACTOR: ${{ github.actor }}
+          SLACK_API: ${{ secrets.SLACK_API }}
+          GIT_LATEST_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
