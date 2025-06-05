@@ -27,10 +27,28 @@ These are the most commonly used packages from the `injective-ts` monorepo.
 
 ### 3. Configuring Vite and adding polyfills
 
-First, add the needed polyfill packages
+First, add the needed polyfill packages and buffer&#x20;
+
+{% hint style="info" %}
+One of the main dependencies for any crypto-related decentralized application is `Buffer`. To make sure we add `Buffer` To our project, we can install it as a dependency and then make a import it to the global/window object).
+
+Example `vite.config.ts` is shared below.
+{% endhint %}
 
 ```bash
-$ yarn add @bangjelkoski/vite-plugin-node-polyfills
+$ yarn add @bangjelkoski/node-stdlib-browser
+$ yarn add -D @bangjelkoski/vite-plugin-node-polyfills
+$ yarn add buffer
+```
+
+Finally, make sure to import the `buffer` in your `main.tsx` on top of the file
+
+```typescript
+import { Buffer } from "buffer";
+
+if (!window.Buffer) {
+    window.Buffer = Buffer; // Optional, for packages expecting Buffer to be global
+}
 ```
 
 ### 4. Using a state management
@@ -57,6 +75,18 @@ import { nodePolyfills } from "@bangjelkoski/vite-plugin-node-polyfills";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), nodePolyfills({ protocolImports: true })],
+  define: {
+    global: "globalThis",
+  },
+  resolve: {
+    alias: {
+      // others
+      buffer: "buffer/",
+    },
+  },
+  optimizeDeps: {
+    include: ["buffer"],
+  },
 });
 ```
 
