@@ -1,6 +1,7 @@
 # Table of contents
 
 * [Overview](README.md)
+* [llm.txt](llm.txt.md)
 
 ## Getting Started
 
