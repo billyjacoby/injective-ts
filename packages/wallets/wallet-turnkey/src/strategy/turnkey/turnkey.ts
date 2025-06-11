@@ -13,7 +13,7 @@ import {
 import { createAccount } from '@turnkey/viem'
 import { HttpRestClient } from '@injectivelabs/utils'
 import { getInjectiveAddress } from '@injectivelabs/sdk-ts'
-import { Turnkey, SessionType, TurnkeyIframeClient } from '@turnkey/sdk-browser'
+import { SessionType, Turnkey, TurnkeyIframeClient } from '@turnkey/sdk-browser'
 import {
   TURNKEY_OAUTH_PATH,
   TURNKEY_OTP_INIT_PATH,
@@ -24,6 +24,18 @@ import { TurnkeyOtpWallet } from './otp.js'
 import { TurnkeyErrorCodes } from '../types.js'
 import { TurnkeyOauthWallet } from './oauth.js'
 import { generateGoogleUrl } from '../../utils.js'
+import {
+  Chain,
+  createWalletClient,
+  http,
+  LocalAccount,
+  SendTransactionParameters,
+} from 'viem'
+import { sepolia, mainnet } from 'viem/chains'
+import { AccountAddress } from 'packages/ts-types/dist/cjs/aliases.js'
+import { EthereumChainId } from 'packages/ts-types/dist/cjs/enums.js'
+
+console.log('THIS IS TURNKEY')
 
 export class TurnkeyWallet {
   protected client: HttpRestClient
@@ -113,7 +125,7 @@ export class TurnkeyWallet {
       await iframeClient.refreshSession({
         sessionType: SessionType.READ_WRITE,
         targetPublicKey: iframeClient.iframePublicKey,
-        expirationSeconds: '900',
+        expirationSeconds: this.metadata.expirationSeconds,
       })
 
       const [session, user] = await Promise.all([
@@ -195,11 +207,59 @@ export class TurnkeyWallet {
       })
     }
   }
+  public async sendEthereumTransaction(
+    _transaction: unknown,
+    _options: { address: AccountAddress; ethereumChainId: EthereumChainId },
+  ) {
+    const chain = (() => {
+      const defaultChain: Chain = {
+        id: 10143,
+        name: 'Injective',
+        rpcUrls: {
+          default: {
+            http: ['https://testnet-rpc.inj.network/'],
+          },
+        },
+        nativeCurrency: {
+          name: 'Injective',
+          symbol: 'INJ',
+          decimals: 18,
+        },
+      }
+      switch (_options.ethereumChainId) {
+        case sepolia.id:
+          return sepolia
+        case mainnet.id:
+          return mainnet
+        case 10143 as EthereumChainId:
+          return defaultChain
+        default:
+          return defaultChain
+      }
+    })()
+
+    const account = await this.getOrCreateAndGetAccount(
+      _options.address,
+      this.organizationId,
+    )
+
+    const client = createWalletClient({
+      account: account as LocalAccount,
+      chain,
+      transport: http('https://testnet-rpc.inj.network/'),
+    })
+
+    const tx = await client.sendTransaction(
+      _transaction as SendTransactionParameters,
+    )
+
+    return tx
+  }
 
   public async getOrCreateAndGetAccount(
     address: string,
     organizationId: string,
-  ) {
+  ): Promise<ReturnType<typeof createAccount>> {
     const { accountMap } = this
     const iframeClient = await this.getIframeClient()
 
@@ -236,6 +296,10 @@ export class TurnkeyWallet {
       options.expirationSeconds || DEFAULT_TURNKEY_REFRESH_SECONDS
     const iframeClient = await this.getIframeClient()
     await iframeClient.injectCredentialBundle(credentialBundle)
+    await iframeClient.loginWithBundle({
+      bundle: credentialBundle,
+      expirationSeconds,
+    })
     await iframeClient.refreshSession({
       sessionType: SessionType.READ_WRITE,
       targetPublicKey: iframeClient.iframePublicKey,

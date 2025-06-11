@@ -141,15 +141,33 @@ export class TurnkeyWalletStrategy
     _transaction: unknown,
     _options: { address: AccountAddress; ethereumChainId: EthereumChainId },
   ): Promise<string> {
-    throw new WalletException(
-      new Error(
-        'sendEthereumTransaction is not supported. Turnkey only supports sending cosmos transactions',
-      ),
-      {
-        code: UnspecifiedErrorCode,
-        context: WalletAction.SendEthereumTransaction,
-      },
-    )
+    try {
+      const tx = await this.turnkeyWallet?.sendEthereumTransaction(
+        _transaction,
+        _options,
+      )
+
+      if (!tx) {
+        throw new WalletException(
+          new Error('sendEthereumTransaction not working'),
+          {
+            code: UnspecifiedErrorCode,
+            context: WalletAction.SendEthereumTransaction,
+          },
+        )
+      }
+      return tx
+    } catch (e) {
+      throw new WalletException(
+        new Error(
+          'sendEthereumTransaction is not supported. Turnkey only supports sending cosmos transactions',
+        ),
+        {
+          code: UnspecifiedErrorCode,
+          context: WalletAction.SendEthereumTransaction,
+        },
+      )
+    }
   }
 
   async sendTransaction(
