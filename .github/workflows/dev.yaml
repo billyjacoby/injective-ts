@@ -7,7 +7,7 @@ on:
 
 jobs:
   publish:
-    if: true
+    if: ${{ !contains(github.event.head_commit.message, 'GITBOOK') }}
     runs-on: ubuntu-latest
     permissions: write-all
 
