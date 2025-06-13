@@ -15,7 +15,7 @@ import {
 import { getAddress } from 'viem'
 import { HttpRestClient } from '@injectivelabs/utils'
 import { AccountAddress, EthereumChainId } from '@injectivelabs/ts-types'
-import { TurnkeyIframeClient } from '@turnkey/sdk-browser'
+import { TurnkeyIndexedDbClient } from '@turnkey/sdk-browser'
 import {
   StdSignDoc,
   WalletAction,
@@ -87,7 +87,7 @@ export class TurnkeyWalletStrategy
         return true
       }
 
-      return !!(await turnkeyWallet.getIframeClient())
+      return !!(await turnkeyWallet.getIndexedDbClient())
     } catch (e) {
       return false
     }
@@ -291,9 +291,9 @@ export class TurnkeyWalletStrategy
     )
   }
 
-  async getIframeClient(): Promise<TurnkeyIframeClient> {
+  async getIframeClient(): Promise<TurnkeyIndexedDbClient> {
     const turnkeyWallet = await this.getTurnkeyWallet()
-    return turnkeyWallet.getIframeClient()
+    return turnkeyWallet.getIndexedDbClient()
   }
 
   private async getTurnkeyWallet(): Promise<TurnkeyWallet> {

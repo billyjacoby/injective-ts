@@ -1,4 +1,4 @@
-import { type TurnkeyIframeClient } from '@turnkey/sdk-browser'
+import { TurnkeyIndexedDbClient } from '@turnkey/sdk-browser'
 import {
   ErrorType,
   WalletException,
@@ -21,13 +21,14 @@ export class TurnkeyOtpWallet {
     subOrgId?: string
     otpInitPath?: string
     client: HttpRestClient
-    iframeClient: TurnkeyIframeClient
+    indexedDbClient: TurnkeyIndexedDbClient
     invalidateExistingSessions?: boolean
   }) {
-    const { client, iframeClient } = args
+    const { client, indexedDbClient } = args
+    const indexedDbPublicKey = await indexedDbClient.getPublicKey()
 
     try {
-      const targetPublicKey = iframeClient.iframePublicKey
+      const targetPublicKey = indexedDbPublicKey
 
       if (!targetPublicKey) {
         throw new WalletException(new Error('Target public key not found'))
@@ -58,16 +59,16 @@ export class TurnkeyOtpWallet {
     emailOTPId: string
     client: HttpRestClient
     organizationId: string
-    iframeClient: TurnkeyIframeClient
+    indexedDbClient: TurnkeyIndexedDbClient
     otpVerifyPath?: string
     expirationSeconds?: number
   }) {
-    const { client, iframeClient, expirationSeconds } = args
+    const { client, indexedDbClient, expirationSeconds } = args
 
     try {
       const organizationId = args.organizationId
       const emailOTPId = args.emailOTPId
-      const targetPublicKey = iframeClient.iframePublicKey
+      const targetPublicKey = await indexedDbClient.getPublicKey()
       const otpVerifyPath = args.otpVerifyPath || TURNKEY_OTP_VERIFY_PATH
 
       if (!targetPublicKey) {

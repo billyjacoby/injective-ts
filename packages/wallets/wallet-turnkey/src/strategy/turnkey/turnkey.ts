@@ -13,7 +13,11 @@ import {
 import { createAccount } from '@turnkey/viem'
 import { HttpRestClient } from '@injectivelabs/utils'
 import { getInjectiveAddress } from '@injectivelabs/sdk-ts'
-import { Turnkey, SessionType, TurnkeyIframeClient } from '@turnkey/sdk-browser'
+import {
+  Turnkey,
+  SessionType,
+  TurnkeyIndexedDbClient,
+} from '@turnkey/sdk-browser'
 import {
   TURNKEY_OAUTH_PATH,
   TURNKEY_OTP_INIT_PATH,
@@ -32,7 +36,7 @@ export class TurnkeyWallet {
 
   protected turnkey: Turnkey | undefined
 
-  protected iframeClient: TurnkeyIframeClient | undefined
+  protected indexedDbClient: TurnkeyIndexedDbClient | undefined
 
   public organizationId: string
 
@@ -54,17 +58,17 @@ export class TurnkeyWallet {
   }
 
   public static async getTurnkeyInstance(metadata: TurnkeyMetadata) {
-    const { turnkey, iframeClient } = await createTurnkeyIFrame(metadata)
+    const { turnkey, indexedDbClient } = await createTurnkeyIFrame(metadata)
 
     return {
       turnkey,
-      iframeClient,
+      indexedDbClient,
     }
   }
 
   public async getTurnkey(): Promise<Turnkey> {
-    if (!this.iframeClient) {
-      await this.initFrame()
+    if (!this.indexedDbClient) {
+      await this.initTurnkey()
     }
 
     if (!this.turnkey) {
@@ -74,22 +78,23 @@ export class TurnkeyWallet {
     return this.turnkey as Turnkey
   }
 
-  public async getIframeClient(): Promise<TurnkeyIframeClient> {
-    if (!this.iframeClient) {
-      await this.initFrame()
+  public async getIndexedDbClient(): Promise<TurnkeyIndexedDbClient> {
+    if (!this.indexedDbClient) {
+      await this.initTurnkey()
     }
 
-    if (!this.iframeClient) {
-      throw new WalletException(new Error('Iframe client not initialized'))
+    if (!this.indexedDbClient) {
+      throw new WalletException(new Error('IndexedDB client not initialized'))
     }
 
-    return this.iframeClient as TurnkeyIframeClient
+    return this.indexedDbClient as TurnkeyIndexedDbClient
   }
 
   public async getSession(existingCredentialBundle?: string) {
     const { metadata } = this
 
-    const iframeClient = await this.getIframeClient()
+    const indexedDbClient = await this.getIndexedDbClient()
+    const indexedDbPublicKey = await indexedDbClient.getPublicKey()
     const turnkey = await this.getTurnkey()
 
     const currentSession = await turnkey.getSession()
@@ -105,31 +110,22 @@ export class TurnkeyWallet {
     }
 
     try {
-      const loginResult = await iframeClient.injectCredentialBundle(
-        credentialBundle,
-      )
+      await indexedDbClient.loginWithBundle(credentialBundle)
 
       // If there is no session, we want to force a refresh to enable to browser SDK to handle key storage and proper session management.
-      await iframeClient.refreshSession({
+      await indexedDbClient.refreshSession({
         sessionType: SessionType.READ_WRITE,
-        targetPublicKey: iframeClient.iframePublicKey,
+        targetPublicKey: indexedDbPublicKey,
         expirationSeconds: '900',
       })
 
       const [session, user] = await Promise.all([
         turnkey.getSession(),
-        iframeClient.getWhoami(),
+        indexedDbClient.getWhoami(),
       ])
 
       const actualOrganizationId =
         user?.organizationId || session?.organizationId || organizationId
-
-      if (!loginResult) {
-        return {
-          session: undefined,
-          organizationId: actualOrganizationId,
-        }
-      }
 
       return {
         session,
@@ -145,20 +141,20 @@ export class TurnkeyWallet {
   }
 
   public async getAccounts() {
-    const iframeClient = await this.getIframeClient()
+    const indexedDbClient = await this.getIndexedDbClient()
 
     if (!this.organizationId) {
       return []
     }
 
     try {
-      const response = await iframeClient.getWallets({
+      const response = await indexedDbClient.getWallets({
         organizationId: this.organizationId,
       })
 
       const accounts = await Promise.allSettled(
         response.wallets.map((wallet) =>
-          iframeClient.getWalletAccounts({
+          indexedDbClient.getWalletAccounts({
             walletId: wallet.walletId,
             organizationId: this.organizationId,
           }),
@@ -201,7 +197,7 @@ export class TurnkeyWallet {
     organizationId: string,
   ) {
     const { accountMap } = this
-    const iframeClient = await this.getIframeClient()
+    const iframeClient = await this.getIndexedDbClient()
 
     if (accountMap[address] || accountMap[address.toLowerCase()]) {
       return accountMap[address] || accountMap[address.toLowerCase()]
@@ -234,11 +230,12 @@ export class TurnkeyWallet {
   ) {
     const expirationSeconds =
       options.expirationSeconds || DEFAULT_TURNKEY_REFRESH_SECONDS
-    const iframeClient = await this.getIframeClient()
-    await iframeClient.injectCredentialBundle(credentialBundle)
-    await iframeClient.refreshSession({
+    const indexedDbClient = await this.getIndexedDbClient()
+    await indexedDbClient.loginWithBundle(credentialBundle)
+    const indexedDbPublicKey = await indexedDbClient.getPublicKey()
+    await indexedDbClient.refreshSession({
       sessionType: SessionType.READ_WRITE,
-      targetPublicKey: iframeClient.iframePublicKey,
+      targetPublicKey: indexedDbPublicKey,
       expirationSeconds,
     })
 
@@ -252,10 +249,10 @@ export class TurnkeyWallet {
 
     // Refresh the session 2 minutes before it expires
     setTimeout(() => {
-      iframeClient.refreshSession({
+      indexedDbClient.refreshSession({
         expirationSeconds: session?.expiry,
         sessionType: SessionType.READ_WRITE,
-        targetPublicKey: iframeClient.iframePublicKey,
+        targetPublicKey: indexedDbPublicKey,
       })
     }, (parseInt(expirationSeconds) - 120) * 1000)
 
@@ -263,11 +260,11 @@ export class TurnkeyWallet {
   }
 
   public async initOTP(email: string) {
-    const iframeClient = await this.getIframeClient()
+    const indexedDbClient = await this.getIndexedDbClient()
 
     const result = await TurnkeyOtpWallet.initEmailOTP({
       client: this.client,
-      iframeClient,
+      indexedDbClient: indexedDbClient,
       email,
       otpInitPath: this.metadata.otpInitPath || TURNKEY_OTP_INIT_PATH,
     })
@@ -288,7 +285,7 @@ export class TurnkeyWallet {
   }
 
   public async confirmOTP(otpCode: string) {
-    const iframeClient = await this.getIframeClient()
+    const indexedDbClient = await this.getIndexedDbClient()
 
     if (!this.otpId) {
       throw new WalletException(new Error('OTP ID is required'))
@@ -296,7 +293,7 @@ export class TurnkeyWallet {
 
     const result = await TurnkeyOtpWallet.confirmEmailOTP({
       otpCode,
-      iframeClient,
+      indexedDbClient,
       client: this.client,
       emailOTPId: this.otpId,
       organizationId: this.organizationId,
@@ -318,8 +315,8 @@ export class TurnkeyWallet {
   public async initOAuth(
     provider: TurnkeyProvider.Google | TurnkeyProvider.Apple,
   ) {
-    const iframeClient = await this.getIframeClient()
-    const nonce = await TurnkeyOauthWallet.generateOAuthNonce(iframeClient)
+    const indexedDbClient = await this.getIndexedDbClient()
+    const nonce = await TurnkeyOauthWallet.generateOAuthNonce(indexedDbClient)
 
     if (provider === TurnkeyProvider.Apple) {
       // TODO: implement the ability to generate Apple OAuth URL
@@ -342,11 +339,11 @@ export class TurnkeyWallet {
     provider: TurnkeyProvider.Google | TurnkeyProvider.Apple,
     oidcToken: string,
   ) {
-    const iframeClient = await this.getIframeClient()
+    const indexedDbClient = await this.getIndexedDbClient()
 
     const oauthResult = await TurnkeyOauthWallet.oauthLogin({
       oidcToken,
-      iframeClient,
+      indexedDbClient,
       client: this.client,
       providerName: provider.toString() as 'google' | 'apple',
       oauthLoginPath: this.metadata.oauthLoginPath || TURNKEY_OAUTH_PATH,
@@ -381,53 +378,30 @@ export class TurnkeyWallet {
     )
   }
 
-  private async initFrame(): Promise<void> {
+  private async initTurnkey(): Promise<void> {
     const { metadata } = this
-    const { turnkey, iframeClient } = await createTurnkeyIFrame(metadata)
+    const { turnkey, indexedDbClient } = await createTurnkeyIFrame(metadata)
 
     this.turnkey = turnkey
-    this.iframeClient = iframeClient
+    this.indexedDbClient = indexedDbClient
   }
 }
 
 async function createTurnkeyIFrame(metadata: TurnkeyMetadata) {
   const turnkey = new Turnkey(metadata)
 
-  const turnkeyAuthIframeElementId =
-    metadata.iframeElementId || 'turnkey-auth-iframe-element-id'
-
-  if (!metadata.iframeContainerId) {
-    throw new GeneralException(new Error('iframeContainerId is required'))
-  }
-
   if (!turnkey) {
     throw new GeneralException(new Error('Turnkey is not initialized'))
   }
 
-  const iframe = document.getElementById(
-    metadata.iframeContainerId,
-  ) as HTMLIFrameElement
+  const indexedDbClient = await turnkey.indexedDbClient()
+  await indexedDbClient.init()
 
-  if (!iframe) {
-    throw new GeneralException(new Error('iframe is null'))
-  }
-
-  const existingIframeClient = document.getElementById(
-    turnkeyAuthIframeElementId,
-  )
-
-  if (existingIframeClient) {
-    existingIframeClient.remove()
-  }
-
-  const iframeClient = await turnkey.iframeClient({
-    iframeContainer: iframe,
-    iframeElementId: turnkeyAuthIframeElementId,
-    iframeUrl: metadata?.iframeUrl || 'https://auth.turnkey.com',
-  })
+  const publicKey = await indexedDbClient.getPublicKey()
+  console.log('publicKey', publicKey)
 
   return {
     turnkey,
-    iframeClient,
+    indexedDbClient,
   }
 }
