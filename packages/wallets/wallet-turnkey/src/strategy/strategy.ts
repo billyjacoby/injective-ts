@@ -13,9 +13,15 @@ import {
   CosmosWalletException,
 } from '@injectivelabs/exceptions'
 import { getAddress } from 'viem'
-import { HttpRestClient } from '@injectivelabs/utils'
+import { sleep, HttpRestClient } from '@injectivelabs/utils'
 import { AccountAddress, EthereumChainId } from '@injectivelabs/ts-types'
 import { TurnkeyIframeClient } from '@turnkey/sdk-browser'
+import {
+  http,
+  LocalAccount,
+  createPublicClient,
+  createWalletClient,
+} from 'viem'
 import {
   StdSignDoc,
   WalletAction,
@@ -25,16 +31,19 @@ import {
   BaseConcreteStrategy,
   ConcreteWalletStrategy,
   SendTransactionOptions,
+  WalletStrategyEthereumOptions,
   ConcreteEthereumWalletStrategyArgs,
 } from '@injectivelabs/wallet-base'
 import { TurnkeyErrorCodes } from './types.js'
 import { TurnkeyWallet } from './turnkey/turnkey.js'
+import { DEFAULT_EVM_CHAIN_CONFIG } from './consts.js'
 
 export class TurnkeyWalletStrategy
   extends BaseConcreteStrategy
   implements ConcreteWalletStrategy
 {
-  public turnkeyWallet: TurnkeyWallet | undefined
+  public turnkeyWallet?: TurnkeyWallet
+  public ethereumOptions: WalletStrategyEthereumOptions
 
   public client: HttpRestClient
 
@@ -53,6 +62,7 @@ export class TurnkeyWalletStrategy
     }
 
     this.client = new HttpRestClient(endpoint)
+    this.ethereumOptions = args.ethereumOptions
   }
 
   async getWalletDeviceType(): Promise<WalletDeviceType> {
@@ -138,35 +148,54 @@ export class TurnkeyWalletStrategy
   }
 
   async sendEthereumTransaction(
-    _transaction: unknown,
-    _options: { address: AccountAddress; ethereumChainId: EthereumChainId },
+    transaction: unknown,
+    options: { address: AccountAddress; ethereumChainId: EthereumChainId },
   ): Promise<string> {
     try {
-      const tx = await this.turnkeyWallet?.sendEthereumTransaction(
-        _transaction,
-        _options,
-      )
+      const { ethereumChainId, rpcUrl } = this.ethereumOptions
+      const turnkeyWallet = await this.getTurnkeyWallet()
+      const organizationId = await this.getOrganizationId()
 
-      if (!tx) {
-        throw new WalletException(
-          new Error('sendEthereumTransaction not working'),
-          {
-            code: UnspecifiedErrorCode,
-            context: WalletAction.SendEthereumTransaction,
-          },
-        )
-      }
-      return tx
-    } catch (e) {
-      throw new WalletException(
-        new Error(
-          'sendEthereumTransaction is not supported. Turnkey only supports sending cosmos transactions',
-        ),
-        {
+      if (!rpcUrl) {
+        throw new WalletException(new Error('Rpc URL is required'), {
           code: UnspecifiedErrorCode,
           context: WalletAction.SendEthereumTransaction,
-        },
+        })
+      }
+
+      const account = await turnkeyWallet.getOrCreateAndGetAccount(
+        getAddress(options.address),
+        organizationId,
       )
+
+      const client = createWalletClient({
+        account: account as LocalAccount,
+        chain: {
+          ...DEFAULT_EVM_CHAIN_CONFIG,
+          id: options.ethereumChainId || ethereumChainId,
+          rpcUrls: {
+            default: {
+              http: [rpcUrl],
+            },
+          },
+        },
+        transport: http(rpcUrl),
+      })
+
+      const signedTransaction = await account.signTransaction(
+        transaction as any,
+      )
+
+      const tx = await client.sendRawTransaction({
+        serializedTransaction: signedTransaction as `0x${string}`,
+      })
+
+      return tx
+    } catch (e) {
+      throw new WalletException(e as Error, {
+        code: UnspecifiedErrorCode,
+        context: WalletAction.SendEthereumTransaction,
+      })
     }
   }
 
@@ -291,14 +320,53 @@ export class TurnkeyWalletStrategy
     )
   }
 
-  async getEthereumTransactionReceipt(_txHash: string): Promise<string> {
-    throw new CosmosWalletException(
-      new Error('getEthereumTransactionReceipt is not supported on Turnkey'),
-      {
+  async getEthereumTransactionReceipt(
+    txHash: string,
+  ): Promise<Record<string, any>> {
+    const { ethereumChainId, rpcUrl } = this.ethereumOptions
+
+    const maxAttempts = 5
+    const interval = 1000
+
+    if (!rpcUrl) {
+      throw new WalletException(new Error('Rpc URL is required'), {
         code: UnspecifiedErrorCode,
-        type: ErrorType.WalletError,
-        context: WalletAction.GetEthereumTransactionReceipt,
+        context: WalletAction.SendEthereumTransaction,
+      })
+    }
+
+    const publicClient = createPublicClient({
+      chain: {
+        ...DEFAULT_EVM_CHAIN_CONFIG,
+        id: ethereumChainId,
+        rpcUrls: {
+          default: {
+            http: [rpcUrl],
+          },
+        },
       },
+      transport: http(rpcUrl),
+    })
+
+    let attempts = 0
+
+    while (attempts < maxAttempts) {
+      attempts++
+      await sleep(interval)
+
+      try {
+        const receipt = await publicClient.getTransactionReceipt({
+          hash: txHash as `0x${string}`,
+        })
+
+        if (receipt) {
+          return receipt
+        }
+      } catch {}
+    }
+
+    throw new Error(
+      `Failed to retrieve transaction receipt for txHash: ${txHash}`,
     )
   }
 

@@ -24,31 +24,19 @@ import { TurnkeyOtpWallet } from './otp.js'
 import { TurnkeyErrorCodes } from '../types.js'
 import { TurnkeyOauthWallet } from './oauth.js'
 import { generateGoogleUrl } from '../../utils.js'
-import {
-  Chain,
-  createWalletClient,
-  http,
-  LocalAccount,
-  SendTransactionParameters,
-} from 'viem'
-import { sepolia, mainnet } from 'viem/chains'
-import { AccountAddress } from 'packages/ts-types/dist/cjs/aliases.js'
-import { EthereumChainId } from 'packages/ts-types/dist/cjs/enums.js'
-
-console.log('THIS IS TURNKEY')
 
 export class TurnkeyWallet {
+  private otpId?: string
+
+  protected turnkey?: Turnkey
+
+  public organizationId: string
+
   protected client: HttpRestClient
 
   private metadata: TurnkeyMetadata
 
-  protected turnkey: Turnkey | undefined
-
-  protected iframeClient: TurnkeyIframeClient | undefined
-
-  public organizationId: string
-
-  private otpId: string | undefined
+  protected iframeClient?: TurnkeyIframeClient
 
   private accountMap: Record<
     string,
@@ -206,54 +194,6 @@ export class TurnkeyWallet {
         contextModule: 'turnkey-wallet-get-accounts',
       })
     }
-  }
-  public async sendEthereumTransaction(
-    _transaction: unknown,
-    _options: { address: AccountAddress; ethereumChainId: EthereumChainId },
-  ) {
-    const chain = (() => {
-      const defaultChain: Chain = {
-        id: 10143,
-        name: 'Injective',
-        rpcUrls: {
-          default: {
-            http: ['https://testnet-rpc.inj.network/'],
-          },
-        },
-        nativeCurrency: {
-          name: 'Injective',
-          symbol: 'INJ',
-          decimals: 18,
-        },
-      }
-      switch (_options.ethereumChainId) {
-        case sepolia.id:
-          return sepolia
-        case mainnet.id:
-          return mainnet
-        case 10143 as EthereumChainId:
-          return defaultChain
-        default:
-          return defaultChain
-      }
-    })()
-
-    const account = await this.getOrCreateAndGetAccount(
-      _options.address,
-      this.organizationId,
-    )
-
-    const client = createWalletClient({
-      account: account as LocalAccount,
-      chain,
-      transport: http('https://testnet-rpc.inj.network/'),
-    })
-
-    const tx = await client.sendTransaction(
-      _transaction as SendTransactionParameters,
-    )
-
-    return tx
   }
 
   public async getOrCreateAndGetAccount(
