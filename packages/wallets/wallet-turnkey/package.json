@@ -64,9 +64,9 @@
     "@injectivelabs/ts-types": "^1.15.27",
     "@injectivelabs/utils": "^1.15.27",
     "@injectivelabs/wallet-base": "^1.15.29",
-    "@turnkey/sdk-browser": "^5.2.0",
-    "@turnkey/viem": "^0.9.6",
-    "viem": "^2.31.0"
+    "@turnkey/sdk-browser": "4.3.0",
+    "@turnkey/viem": "0.9.3",
+    "viem": "2.29.4"
   },
   "devDependencies": {
     "jest": "^29.0.0",
