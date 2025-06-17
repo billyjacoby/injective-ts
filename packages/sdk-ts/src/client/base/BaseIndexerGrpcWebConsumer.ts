@@ -8,11 +8,11 @@ export default class BaseIndexerGrpcWebConsumer extends GrpcWebImpl {
   protected module: string = ''
 
   constructor(endpoint: string, metadata: Record<string, string> = {}) {
-    const _metadata = new grpc.Metadata()
+    const grpcMetadata = new grpc.Metadata()
 
-    Object.keys(metadata).forEach((key) => _metadata.set(key, metadata[key]))
+    Object.keys(metadata).forEach((key) => grpcMetadata.set(key, metadata[key]))
 
-    super(endpoint, { transport: getGrpcTransport(), metadata: _metadata })
+    super(endpoint, { transport: getGrpcTransport(), metadata: grpcMetadata })
   }
 }
 
