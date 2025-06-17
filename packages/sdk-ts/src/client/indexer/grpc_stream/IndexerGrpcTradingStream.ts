@@ -9,9 +9,9 @@ import { getGrpcIndexerWebImpl } from '../../base/BaseIndexerGrpcWebConsumer.js'
 export class IndexerGrpcTradingStream {
   protected client: InjectiveTradingRpc.InjectiveTradingRPCClientImpl
 
-  constructor(endpoint: string) {
+  constructor(endpoint: string, metadata?: Record<string, string>) {
     this.client = new InjectiveTradingRpc.InjectiveTradingRPCClientImpl(
-      getGrpcIndexerWebImpl(endpoint),
+      getGrpcIndexerWebImpl(endpoint, metadata),
     )
   }
 
