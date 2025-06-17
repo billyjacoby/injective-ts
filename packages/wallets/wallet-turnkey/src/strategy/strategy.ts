@@ -21,6 +21,7 @@ import {
   LocalAccount,
   createPublicClient,
   createWalletClient,
+  PrepareTransactionRequestParameters,
 } from 'viem'
 import {
   StdSignDoc,
@@ -168,7 +169,7 @@ export class TurnkeyWalletStrategy
         organizationId,
       )
 
-      const client = createWalletClient({
+      const accountClient = createWalletClient({
         account: account as LocalAccount,
         chain: {
           ...DEFAULT_EVM_CHAIN_CONFIG,
@@ -182,11 +183,17 @@ export class TurnkeyWalletStrategy
         transport: http(rpcUrl),
       })
 
-      const signedTransaction = await account.signTransaction(
-        transaction as any,
+      const preparedTransaction = await accountClient.prepareTransactionRequest(
+        transaction as PrepareTransactionRequestParameters,
       )
 
-      const tx = await client.sendRawTransaction({
+      delete preparedTransaction.account
+
+      const signedTransaction = await accountClient.signTransaction(
+        preparedTransaction,
+      )
+
+      const tx = await accountClient.sendRawTransaction({
         serializedTransaction: signedTransaction as `0x${string}`,
       })
 
