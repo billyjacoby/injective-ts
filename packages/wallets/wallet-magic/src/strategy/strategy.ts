@@ -145,17 +145,17 @@ export class Magic
     )
   }
 
-  async sendEthereumTransaction(
+  async sendEvmTransaction(
     _transaction: unknown,
     _options: { address: AccountAddress; ethereumChainId: EthereumChainId },
   ): Promise<string> {
     throw new CosmosWalletException(
       new Error(
-        'sendEthereumTransaction is not supported. Leap only supports sending cosmos transactions',
+        'sendEvmTransaction is not supported. Leap only supports sending cosmos transactions',
       ),
       {
         code: UnspecifiedErrorCode,
-        context: WalletAction.SendEthereumTransaction,
+        context: WalletAction.SendEvmTransaction,
       },
     )
   }
@@ -256,15 +256,13 @@ export class Magic
     )
   }
 
-  async getEthereumTransactionReceipt(_txHash: string): Promise<string> {
+  async getEvmTransactionReceipt(_txHash: string): Promise<string> {
     throw new CosmosWalletException(
-      new Error(
-        'getEthereumTransactionReceipt is not supported on Cosmostation',
-      ),
+      new Error('getEvmTransactionReceipt is not supported on Cosmostation'),
       {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
-        context: WalletAction.GetEthereumTransactionReceipt,
+        context: WalletAction.GetEvmTransactionReceipt,
       },
     )
   }

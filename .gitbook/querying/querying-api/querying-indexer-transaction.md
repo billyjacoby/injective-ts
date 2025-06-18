@@ -80,9 +80,7 @@ const walletStrategy = new WalletStrategy({
   chainId: CHAIN_ID,
   ethereumOptions: {
     rpcUrl,
-    wsRpcUrl,
     ethereumChainId: ETHEREUM_CHAIN_ID,
-    disabledWallets: [Wallet.WalletConnect]
   }
 })
 
@@ -140,9 +138,7 @@ import { IndexerGrpcTransactionApi } from '@injectivelabs/sdk-ts'
 import { getNetworkEndpoints, Network } from '@injectivelabs/networks'
 
 const endpoints = getNetworkEndpoints(Network.Testnet)
-const indexerGrpcTransactionApi = new IndexerGrpcTransactionApi(
-  endpoints.indexer,
-)
+const indexerGrpcTransactionApi = new IndexerGrpcTransactionApi(endpoints.indexer)
 
 const feePayer = await indexerGrpcTransactionApi.fetchFeePayer()
 

@@ -136,7 +136,7 @@ export class CosmosWalletStrategy
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async sendEthereumTransaction(
+  async sendEvmTransaction(
     _transaction: unknown,
     _options: { address: AccountAddress; ethereumChainId: EthereumChainId },
   ): Promise<string> {
@@ -144,13 +144,13 @@ export class CosmosWalletStrategy
 
     throw new CosmosWalletException(
       new Error(
-        `sendEthereumTransaction is not supported. ${capitalize(
+        `sendEvmTransaction is not supported. ${capitalize(
           wallet,
         )} only supports sending cosmos transactions`,
       ),
       {
         code: UnspecifiedErrorCode,
-        context: WalletAction.SendEthereumTransaction,
+        context: WalletAction.SendEvmTransaction,
       },
     )
   }
@@ -269,18 +269,16 @@ export class CosmosWalletStrategy
     )
   }
 
-  async getEthereumTransactionReceipt(_txHash: string): Promise<string> {
+  async getEvmTransactionReceipt(_txHash: string): Promise<string> {
     const { wallet } = this
 
     throw new CosmosWalletException(
       new Error(
-        `getEthereumTransactionReceipt is not supported on ${capitalize(
-          wallet,
-        )}`,
+        `getEvmTransactionReceipt is not supported on ${capitalize(wallet)}`,
       ),
       {
         code: UnspecifiedErrorCode,
-        context: WalletAction.GetEthereumTransactionReceipt,
+        context: WalletAction.GetEvmTransactionReceipt,
       },
     )
   }

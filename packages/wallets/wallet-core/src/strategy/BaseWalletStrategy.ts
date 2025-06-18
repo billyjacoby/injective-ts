@@ -136,8 +136,11 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
     return this.getStrategy().getEthereumChainId()
   }
 
-  public async getEthereumTransactionReceipt(txHash: string): Promise<void> {
-    return this.getStrategy().getEthereumTransactionReceipt(txHash)
+  public async getEvmTransactionReceipt(
+    txHash: string,
+    ethereumChainId?: EthereumChainId,
+  ): Promise<void> {
+    return this.getStrategy().getEvmTransactionReceipt(txHash, ethereumChainId)
   }
 
   public async getSessionOrConfirm(address?: AccountAddress): Promise<string> {
@@ -164,14 +167,14 @@ export default class BaseWalletStrategy implements WalletStrategyInterface {
     return this.getStrategy().sendTransaction(tx, options)
   }
 
-  public async sendEthereumTransaction(
+  public async sendEvmTransaction(
     tx: any /* TODO */,
     options: {
       address: AccountAddress /* Ethereum address */
       ethereumChainId: EthereumChainId
     },
   ): Promise<string> {
-    return this.getStrategy().sendEthereumTransaction(tx, options)
+    return this.getStrategy().sendEvmTransaction(tx, options)
   }
 
   public async signEip712TypedData(

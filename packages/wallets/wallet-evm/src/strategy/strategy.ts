@@ -193,7 +193,7 @@ export class EvmWallet
     )
   }
 
-  async sendEthereumTransaction(
+  async sendEvmTransaction(
     transaction: unknown,
     _options: { address: AccountAddress; ethereumChainId: EthereumChainId },
   ): Promise<string> {
@@ -208,7 +208,7 @@ export class EvmWallet
       throw this.EvmWalletException(new Error((e as any).message), {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
-        contextModule: WalletAction.SendEthereumTransaction,
+        contextModule: WalletAction.SendEvmTransaction,
       })
     }
   }
@@ -345,7 +345,7 @@ export class EvmWallet
     }
   }
 
-  async getEthereumTransactionReceipt(txHash: string): Promise<string> {
+  async getEvmTransactionReceipt(txHash: string): Promise<string> {
     const ethereum = await this.getEthereum()
 
     const interval = 1000
@@ -369,7 +369,7 @@ export class EvmWallet
       throw this.EvmWalletException(new Error((e as any).message), {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
-        contextModule: WalletAction.GetEthereumTransactionReceipt,
+        contextModule: WalletAction.GetEvmTransactionReceipt,
       })
     }
   }

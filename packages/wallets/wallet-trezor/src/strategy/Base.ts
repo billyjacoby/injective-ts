@@ -137,17 +137,14 @@ export default class TrezorBase
     )
   }
 
-  async sendEthereumTransaction(
+  async sendEvmTransaction(
     txData: any,
-    options: { address: string; ethereumChainId: EthereumChainId },
+    args: { address: string; ethereumChainId: EthereumChainId },
   ): Promise<string> {
-    const signedTransaction = await this.signEthereumTransaction(
-      txData,
-      options,
-    )
+    const signedTransaction = await this.signEvmTransaction(txData, args)
 
     try {
-      const alchemy = await this.getAlchemy()
+      const alchemy = await this.getAlchemy(args.ethereumChainId)
       const txReceipt = await alchemy.core.sendTransaction(
         addHexPrefix(signedTransaction.serialize().toString('hex')),
       )
@@ -157,7 +154,7 @@ export default class TrezorBase
       throw new TrezorException(new Error((e as any).message), {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
-        contextModule: WalletAction.SendEthereumTransaction,
+        contextModule: WalletAction.SendEvmTransaction,
       })
     }
   }
@@ -313,7 +310,7 @@ export default class TrezorBase
     return alchemyProvider.network.chainId.toString()
   }
 
-  async getEthereumTransactionReceipt(txHash: string): Promise<string> {
+  async getEvmTransactionReceipt(txHash: string): Promise<string> {
     return Promise.resolve(txHash)
   }
 
@@ -324,13 +321,13 @@ export default class TrezorBase
     )
   }
 
-  private async signEthereumTransaction(
+  private async signEvmTransaction(
     txData: any,
-    options: { address: string; ethereumChainId: EthereumChainId },
+    args: { address: string; ethereumChainId: EthereumChainId },
   ) {
-    const chainId = parseInt(options.ethereumChainId.toString(), 10)
-    const alchemy = await this.getAlchemy()
-    const nonce = await alchemy.core.getTransactionCount(options.address)
+    const chainId = parseInt(args.ethereumChainId.toString(), 10)
+    const alchemy = await this.getAlchemy(args.ethereumChainId)
+    const nonce = await alchemy.core.getTransactionCount(args.address)
 
     const common = new Common({
       chain: getNetworkFromChainId(chainId),
@@ -360,7 +357,7 @@ export default class TrezorBase
 
     try {
       await this.trezor.connect()
-      const { derivationPath } = await this.getWalletForAddress(options.address)
+      const { derivationPath } = await this.getWalletForAddress(args.address)
       const response = await TrezorConnect.ethereumSignTransaction({
         path: derivationPath,
         transaction,
@@ -375,7 +372,7 @@ export default class TrezorBase
           {
             code: UnspecifiedErrorCode,
             type: ErrorType.WalletError,
-            contextModule: WalletAction.SignEthereumTransaction,
+            contextModule: WalletAction.SignEvmTransaction,
           },
         )
       }
@@ -398,7 +395,7 @@ export default class TrezorBase
       throw new TrezorException(new Error((e as any).message), {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
-        contextModule: WalletAction.SignEthereumTransaction,
+        contextModule: WalletAction.SignEvmTransaction,
       })
     }
   }
@@ -430,23 +427,26 @@ export default class TrezorBase
     )) as TrezorWalletInfo
   }
 
-  private async getAlchemy() {
+  private async getAlchemy(ethereumChainId?: EthereumChainId) {
     if (this.alchemy) {
       return this.alchemy
     }
 
-    const { rpcUrl, ethereumChainId } = this.ethereumOptions
+    const options = this.ethereumOptions
 
-    if (!rpcUrl) {
+    const chainId = ethereumChainId || options.ethereumChainId
+    const url = options.rpcUrl || options.rpcUrls?.[chainId]
+
+    if (!url) {
       throw new GeneralException(
         new Error('Please pass rpcUrl within the ethereumOptions'),
       )
     }
 
     this.alchemy = new Alchemy({
-      apiKey: getKeyFromRpcUrl(rpcUrl),
+      apiKey: getKeyFromRpcUrl(url),
       network:
-        ethereumChainId === EthereumChainId.Mainnet
+        chainId === EthereumChainId.Mainnet
           ? AlchemyNetwork.ETH_MAINNET
           : AlchemyNetwork.ETH_SEPOLIA,
     })

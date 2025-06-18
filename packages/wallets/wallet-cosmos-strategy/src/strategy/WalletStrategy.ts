@@ -16,8 +16,8 @@ const createStrategy = ({
   args,
   wallet,
 }: {
-  args: CosmosWalletStrategyArguments
   wallet: Wallet
+  args: CosmosWalletStrategyArguments
 }): ConcreteWalletStrategy | undefined => {
   switch (wallet) {
     case Wallet.Keplr:

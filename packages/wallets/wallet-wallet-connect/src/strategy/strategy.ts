@@ -100,7 +100,7 @@ export class WalletConnect
     return wc.session?.topic || ''
   }
 
-  async sendEthereumTransaction(
+  async sendEvmTransaction(
     transaction: unknown,
     _options: { address: AccountAddress; ethereumChainId: EthereumChainId },
   ): Promise<string> {
@@ -115,7 +115,7 @@ export class WalletConnect
       throw new MetamaskException(new Error((e as any).message), {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
-        contextModule: WalletAction.SendEthereumTransaction,
+        contextModule: WalletAction.SendEvmTransaction,
       })
     }
   }
@@ -235,13 +235,13 @@ export class WalletConnect
     }
   }
 
-  async getEthereumTransactionReceipt(_txHash: string): Promise<string> {
+  async getEvmTransactionReceipt(_txHash: string): Promise<string> {
     throw new WalletException(
       new Error('This wallet does not support awaiting Ethereum transactions'),
       {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
-        contextModule: WalletAction.GetEthereumTransactionReceipt,
+        contextModule: WalletAction.GetEvmTransactionReceipt,
       },
     )
   }

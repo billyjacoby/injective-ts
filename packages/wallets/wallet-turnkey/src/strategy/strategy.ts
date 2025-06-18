@@ -148,24 +148,30 @@ export class TurnkeyWalletStrategy
     return (await this.getTurnkeyWallet()) as TurnkeyWallet
   }
 
-  async sendEthereumTransaction(
+  async sendEvmTransaction(
     transaction: unknown,
-    options: { address: AccountAddress; ethereumChainId: EthereumChainId },
+    args: { address: AccountAddress; ethereumChainId: EthereumChainId },
   ): Promise<string> {
     try {
-      const { ethereumChainId, rpcUrl } = this.ethereumOptions
+      const options = this.ethereumOptions
       const turnkeyWallet = await this.getTurnkeyWallet()
       const organizationId = await this.getOrganizationId()
 
-      if (!rpcUrl) {
-        throw new WalletException(new Error('Rpc URL is required'), {
-          code: UnspecifiedErrorCode,
-          context: WalletAction.SendEthereumTransaction,
-        })
+      const chainId = args.ethereumChainId || options.ethereumChainId
+      const url = options.rpcUrl || options.rpcUrls?.[args.ethereumChainId]
+
+      if (!url) {
+        throw new WalletException(
+          new Error('Please pass rpcUrl within the ethereumOptions'),
+          {
+            code: UnspecifiedErrorCode,
+            context: WalletAction.SendEvmTransaction,
+          },
+        )
       }
 
       const account = await turnkeyWallet.getOrCreateAndGetAccount(
-        getAddress(options.address),
+        getAddress(args.address),
         organizationId,
       )
 
@@ -173,14 +179,14 @@ export class TurnkeyWalletStrategy
         account: account as LocalAccount,
         chain: {
           ...DEFAULT_EVM_CHAIN_CONFIG,
-          id: options.ethereumChainId || ethereumChainId,
+          id: chainId,
           rpcUrls: {
             default: {
-              http: [rpcUrl],
+              http: [url],
             },
           },
         },
-        transport: http(rpcUrl),
+        transport: http(url),
       })
 
       const preparedTransaction = await accountClient.prepareTransactionRequest(
@@ -201,7 +207,7 @@ export class TurnkeyWalletStrategy
     } catch (e) {
       throw new WalletException(e as Error, {
         code: UnspecifiedErrorCode,
-        context: WalletAction.SendEthereumTransaction,
+        context: WalletAction.SendEvmTransaction,
       })
     }
   }
@@ -327,32 +333,38 @@ export class TurnkeyWalletStrategy
     )
   }
 
-  async getEthereumTransactionReceipt(
+  async getEvmTransactionReceipt(
     txHash: string,
+    ethereumChainId?: EthereumChainId,
   ): Promise<Record<string, any>> {
-    const { ethereumChainId, rpcUrl } = this.ethereumOptions
+    const options = this.ethereumOptions
 
     const maxAttempts = 5
     const interval = 1000
+    const chainId = ethereumChainId || options.ethereumChainId
+    const url = options.rpcUrl || options.rpcUrls?.[chainId]
 
-    if (!rpcUrl) {
-      throw new WalletException(new Error('Rpc URL is required'), {
-        code: UnspecifiedErrorCode,
-        context: WalletAction.SendEthereumTransaction,
-      })
+    if (!url) {
+      throw new WalletException(
+        new Error('Please pass rpcUrl within the ethereumOptions'),
+        {
+          code: UnspecifiedErrorCode,
+          context: WalletAction.GetEvmTransactionReceipt,
+        },
+      )
     }
 
     const publicClient = createPublicClient({
       chain: {
         ...DEFAULT_EVM_CHAIN_CONFIG,
-        id: ethereumChainId,
+        id: chainId,
         rpcUrls: {
           default: {
-            http: [rpcUrl],
+            http: [url],
           },
         },
       },
-      transport: http(rpcUrl),
+      transport: http(url),
     })
 
     let attempts = 0
