@@ -87,7 +87,7 @@ export class LedgerCosmos
     )
   }
 
-  async sendEthereumTransaction(
+  async sendEvmTransaction(
     _txData: any,
     _options: {
       address: string
@@ -96,11 +96,11 @@ export class LedgerCosmos
   ): Promise<string> {
     throw new CosmosWalletException(
       new Error(
-        'sendEthereumTransaction is not supported. LedgerCosmos only supports sending cosmos transactions',
+        'sendEvmTransaction is not supported. LedgerCosmos only supports sending cosmos transactions',
       ),
       {
         code: UnspecifiedErrorCode,
-        context: WalletAction.SendEthereumTransaction,
+        context: WalletAction.SendEvmTransaction,
       },
     )
   }
@@ -222,12 +222,12 @@ export class LedgerCosmos
     )
   }
 
-  async getEthereumTransactionReceipt(_txHash: string): Promise<string> {
+  async getEvmTransactionReceipt(_txHash: string): Promise<string> {
     throw new CosmosWalletException(
-      new Error('getEthereumTransactionReceipt is not supported on Keplr'),
+      new Error('getEvmTransactionReceipt is not supported on Keplr'),
       {
         code: UnspecifiedErrorCode,
-        context: WalletAction.GetEthereumTransactionReceipt,
+        context: WalletAction.GetEvmTransactionReceipt,
       },
     )
   }

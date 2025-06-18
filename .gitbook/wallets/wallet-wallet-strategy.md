@@ -8,23 +8,23 @@ Let's have a look at the methods that `WalletStrategy` strategy exposes and what
 
 **Both Ethereum and Cosmos native wallets:**
 
-* `getAddresses` gets the addresses from the connected wallet strategy. This method returns the Ethereum addresses for Ethereum native wallets (strategies) and Injective addresses for Cosmos native wallets (strategies).
-* `signTransaction` signs a transaction using the corresponding wallet type method (`signCosmosTransaction` for Cosmos native wallets, `signEip712TypedData` for Ethereum native wallets)
-* `sendTransaction` signs a transaction using the corresponding wallet type method (needs a `sentryEndpoint` passed to the options if we wanna use it on Ethereum native wallets - explanation can be found below)
-* `getWalletDeviceType` returns the wallet connection type (mobile, browser, hardware),
+- `getAddresses` gets the addresses from the connected wallet strategy. This method returns the Ethereum addresses for Ethereum native wallets (strategies) and Injective addresses for Cosmos native wallets (strategies).
+- `signTransaction` signs a transaction using the corresponding wallet type method (`signCosmosTransaction` for Cosmos native wallets, `signEip712TypedData` for Ethereum native wallets)
+- `sendTransaction` signs a transaction using the corresponding wallet type method (needs a `sentryEndpoint` passed to the options if we wanna use it on Ethereum native wallets - explanation can be found below)
+- `getWalletDeviceType` returns the wallet connection type (mobile, browser, hardware),
 
 **Cosmos native wallets:**
 
-* `signCosmosTransaction` signs an Injective transaction using the connected wallet strategy,
-* `getPublicKey` get the public key for the Cosmos native wallet strategies,
+- `signCosmosTransaction` signs an Injective transaction using the connected wallet strategy,
+- `getPublicKey` get the public key for the Cosmos native wallet strategies,
 
 **Ethereum native wallets:**
 
-* `getEthereumChainId` get the chain id for the Ethereum native wallet strategies,
-* `signEip712TypedData` signs an EIP712 typed data using the connected wallet strategy,
-* `sendEthereumTransaction` sends an Ethereum Web3 transaction using the connected wallet strategy,
-* `signEthereumTransaction` signs an Ethereum Web3 transaction using the connected wallet strategy,
-* `getEthereumTransactionReceipt` get the transaction receipt for Ethereum native transactions for the wallet strategy,
+- `getEthereumChainId` get the chain id for the Ethereum native wallet strategies,
+- `signEip712TypedData` signs an EIP712 typed data using the connected wallet strategy,
+- `sendEvmTransaction` sends an Ethereum Web3 transaction using the connected wallet strategy,
+- `signEvmTransaction` signs an Ethereum Web3 transaction using the connected wallet strategy,
+- `getEvmTransactionReceipt` get the transaction receipt for Ethereum native transactions for the wallet strategy,
 
 ### Arguments
 
@@ -60,7 +60,7 @@ export const walletStrategy = new WalletStrategy({
   chainId: ChainId.Mainnet,
   ethereumOptions: {
     ethereumChainId: EthereumChainId.Mainnet,
-    rpcUrl: alchemyRpcEndpoint
+    rpcUrl: alchemyRpcEndpoint,
   }
 })
 

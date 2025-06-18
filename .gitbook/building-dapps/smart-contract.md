@@ -47,19 +47,12 @@ import { WalletStrategy } from '@injectivelabs/wallet-strategy'
 import { Web3Exception } from '@injectivelabs/exceptions'
 
 // These imports are from .env
-import {
-  CHAIN_ID,
-  ETHEREUM_CHAIN_ID,
-  IS_TESTNET,
-  alchemyRpcEndpoint,
-  alchemyWsRpcEndpoint,
-} from '/constants'
+import { CHAIN_ID, IS_TESTNET, ETHEREUM_CHAIN_ID, alchemyRpcEndpoint, alchemyWsRpcEndpoint } from '/constants'
 
 export const walletStrategy = new WalletStrategy({
   chainId: CHAIN_ID,
   ethereumOptions: {
     ethereumChainId: ETHEREUM_CHAIN_ID,
-    wsRpcUrl: alchemyWsRpcEndpoint,
     rpcUrl: alchemyRpcEndpoint,
   },
 })
@@ -87,11 +80,7 @@ Note: We can switch between the "active" wallet within the `WalletStrategy` usin
 
 ```ts
 // filename: WalletConnection.ts
-import {
-  WalletException,
-  UnspecifiedErrorCode,
-  ErrorType,
-} from '@injectivelabs/exceptions'
+import { WalletException, UnspecifiedErrorCode, ErrorType } from '@injectivelabs/exceptions'
 import { Wallet } from '@injectivelabs/wallet-base'
 import { walletStrategy } from './Wallet.ts'
 
@@ -101,23 +90,17 @@ export const getAddresses = async (wallet: Wallet): Promise<string[]> => {
   const addresses = await walletStrategy.getAddresses()
 
   if (addresses.length === 0) {
-    throw new WalletException(
-      new Error('There are no addresses linked in this wallet.'),
-      {
-        code: UnspecifiedErrorCode,
-        type: ErrorType.WalletError,
-      },
-    )
+    throw new WalletException(new Error('There are no addresses linked in this wallet.'), {
+      code: UnspecifiedErrorCode,
+      type: ErrorType.WalletError,
+    })
   }
 
   if (!addresses.every((address) => !!address)) {
-    throw new WalletException(
-      new Error('There are no addresses linked in this wallet.'),
-      {
-        code: UnspecifiedErrorCode,
-        type: ErrorType.WalletError,
-      },
-    )
+    throw new WalletException(new Error('There are no addresses linked in this wallet.'), {
+      code: UnspecifiedErrorCode,
+      type: ErrorType.WalletError,
+    })
   }
 
   // If we are using Ethereum native wallets the 'addresses' are the hex addresses
@@ -234,7 +217,6 @@ const walletStrategy = new WalletStrategy({
   chainId: CHAIN_ID,
   ethereumOptions: {
     ethereumChainId: ETHEREUM_CHAIN_ID,
-    wsRpcUrl: alchemyWsRpcEndpoint,
     rpcUrl: alchemyRpcEndpoint,
   },
 });

@@ -40,6 +40,7 @@ export type WalletConnectMetadata = {
 export interface WalletStrategyEthereumOptions {
   ethereumChainId: EthereumChainId
   rpcUrl?: string
+  rpcUrls?: Record<Partial<EthereumChainId>, string>
 }
 
 export interface SendTransactionOptions {
@@ -205,7 +206,7 @@ export interface ConcreteWalletStrategy
    * @param transaction should implement TransactionConfig
    * @param options
    */
-  sendEthereumTransaction(
+  sendEvmTransaction(
     transaction: unknown,
     options: { address: string; ethereumChainId: EthereumChainId },
   ): Promise<string>
@@ -245,7 +246,10 @@ export interface ConcreteWalletStrategy
 
   getEthereumChainId(): Promise<string>
 
-  getEthereumTransactionReceipt(txHash: string): void
+  getEvmTransactionReceipt(
+    txHash: string,
+    ethereumChainId?: EthereumChainId,
+  ): void
 
   onAccountChange?(callback: onAccountChangeCallback): Promise<void> | void
 
@@ -275,13 +279,16 @@ export interface WalletStrategy {
   enable(args?: unknown): Promise<boolean>
   enableAndGetAddresses(args?: unknown): Promise<AccountAddress[]>
   getEthereumChainId(): Promise<string>
-  getEthereumTransactionReceipt(txHash: string): Promise<void>
+  getEvmTransactionReceipt(
+    txHash: string,
+    ethereumChainId?: EthereumChainId,
+  ): Promise<void>
   getSessionOrConfirm(address?: AccountAddress): Promise<string>
   sendTransaction(
     tx: DirectSignResponse | TxRaw,
     options: SendTransactionOptions,
   ): Promise<TxResponse>
-  sendEthereumTransaction(
+  sendEvmTransaction(
     tx: any,
     options: { address: AccountAddress; ethereumChainId: EthereumChainId },
   ): Promise<string>

@@ -50,13 +50,13 @@ export enum IndexerErrorModule {
 }
 
 export enum WalletErrorActionModule {
-  SignTransaction = 'sign-transaction',
-  SignEthereumTransaction = 'sign-ethereum-transaction',
-  SendTransaction = 'send-transaction',
-  SendEthereumTransaction = 'send-ethereum-transaction',
-  SignArbitrary = 'sign-arbitrary',
+  GetChainId = 'get-chain-id',
   GetAccounts = 'get-accounts',
   GetNetworkId = 'get-network-id',
-  GetChainId = 'get-chain-id',
-  GetEthereumTransactionReceipt = 'get-ethereum-transaction-receipt',
+  SignArbitrary = 'sign-arbitrary',
+  SignTransaction = 'sign-transaction',
+  SendTransaction = 'send-transaction',
+  SendEvmTransaction = 'send-evm-transaction',
+  SignEvmTransaction = 'sign-evm-transaction',
+  GetEvmTransactionReceipt = 'get-evm-transaction-receipt',
 }

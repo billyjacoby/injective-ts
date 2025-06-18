@@ -111,17 +111,17 @@ export class Cosmostation
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async sendEthereumTransaction(
+  async sendEvmTransaction(
     _transaction: unknown,
     _options: { address: AccountAddress; ethereumChainId: EthereumChainId },
   ): Promise<string> {
     throw new CosmosWalletException(
       new Error(
-        'sendEthereumTransaction is not supported. Cosmostation only supports sending cosmos transactions',
+        'sendEvmTransaction is not supported. Cosmostation only supports sending cosmos transactions',
       ),
       {
         code: UnspecifiedErrorCode,
-        context: WalletAction.SendEthereumTransaction,
+        context: WalletAction.SendEvmTransaction,
       },
     )
   }
@@ -288,15 +288,13 @@ export class Cosmostation
     )
   }
 
-  async getEthereumTransactionReceipt(_txHash: string): Promise<string> {
+  async getEvmTransactionReceipt(_txHash: string): Promise<string> {
     throw new CosmosWalletException(
-      new Error(
-        'getEthereumTransactionReceipt is not supported on Cosmostation',
-      ),
+      new Error('getEvmTransactionReceipt is not supported on Cosmostation'),
       {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
-        context: WalletAction.GetEthereumTransactionReceipt,
+        context: WalletAction.GetEvmTransactionReceipt,
       },
     )
   }

@@ -13,7 +13,7 @@ import {
 import { createAccount } from '@turnkey/viem'
 import { HttpRestClient } from '@injectivelabs/utils'
 import { getInjectiveAddress } from '@injectivelabs/sdk-ts'
-import { Turnkey, SessionType, TurnkeyIframeClient } from '@turnkey/sdk-browser'
+import { SessionType, Turnkey, TurnkeyIframeClient } from '@turnkey/sdk-browser'
 import {
   TURNKEY_OAUTH_PATH,
   TURNKEY_OTP_INIT_PATH,
@@ -26,17 +26,17 @@ import { TurnkeyOauthWallet } from './oauth.js'
 import { generateGoogleUrl } from '../../utils.js'
 
 export class TurnkeyWallet {
+  private otpId?: string
+
+  protected turnkey?: Turnkey
+
+  public organizationId: string
+
   protected client: HttpRestClient
 
   private metadata: TurnkeyMetadata
 
-  protected turnkey: Turnkey | undefined
-
-  protected iframeClient: TurnkeyIframeClient | undefined
-
-  public organizationId: string
-
-  private otpId: string | undefined
+  protected iframeClient?: TurnkeyIframeClient
 
   private accountMap: Record<
     string,
@@ -113,7 +113,7 @@ export class TurnkeyWallet {
       await iframeClient.refreshSession({
         sessionType: SessionType.READ_WRITE,
         targetPublicKey: iframeClient.iframePublicKey,
-        expirationSeconds: '900',
+        expirationSeconds: this.metadata.expirationSeconds,
       })
 
       const [session, user] = await Promise.all([
@@ -199,7 +199,7 @@ export class TurnkeyWallet {
   public async getOrCreateAndGetAccount(
     address: string,
     organizationId: string,
-  ) {
+  ): Promise<ReturnType<typeof createAccount>> {
     const { accountMap } = this
     const iframeClient = await this.getIframeClient()
 
@@ -236,6 +236,10 @@ export class TurnkeyWallet {
       options.expirationSeconds || DEFAULT_TURNKEY_REFRESH_SECONDS
     const iframeClient = await this.getIframeClient()
     await iframeClient.injectCredentialBundle(credentialBundle)
+    await iframeClient.loginWithBundle({
+      bundle: credentialBundle,
+      expirationSeconds,
+    })
     await iframeClient.refreshSession({
       sessionType: SessionType.READ_WRITE,
       targetPublicKey: iframeClient.iframePublicKey,

@@ -40,12 +40,12 @@ export class Web3Broadcaster {
     const { walletStrategy, ethereumChainId } = this
 
     try {
-      const txHash = await walletStrategy.sendEthereumTransaction(args.tx, {
+      const txHash = await walletStrategy.sendEvmTransaction(args.tx, {
         ethereumChainId,
         address: args.address,
       })
 
-      await walletStrategy.getEthereumTransactionReceipt(txHash)
+      await walletStrategy.getEvmTransactionReceipt(txHash, ethereumChainId)
 
       return txHash
     } catch (e: unknown) {

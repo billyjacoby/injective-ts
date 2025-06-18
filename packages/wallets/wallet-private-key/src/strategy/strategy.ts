@@ -68,7 +68,7 @@ export class PrivateKeyWallet
     )
   }
 
-  async sendEthereumTransaction(
+  async sendEvmTransaction(
     _transaction: unknown,
     _options: { address: AccountAddress; ethereumChainId: EthereumChainId },
   ): Promise<string> {
@@ -77,7 +77,7 @@ export class PrivateKeyWallet
       {
         code: UnspecifiedErrorCode,
         type: ErrorType.WalletError,
-        contextModule: WalletAction.SendEthereumTransaction,
+        contextModule: WalletAction.SendEvmTransaction,
       },
     )
   }
@@ -218,7 +218,7 @@ export class PrivateKeyWallet
     }
   }
 
-  async getEthereumTransactionReceipt(_txHash: string): Promise<string> {
+  async getEvmTransactionReceipt(_txHash: string): Promise<string> {
     throw new WalletException(new Error('Not supported'))
   }
 
