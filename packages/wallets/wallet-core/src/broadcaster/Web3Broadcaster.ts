@@ -13,6 +13,7 @@ interface SendTransactionOptions {
     data: any
   }
   address: string
+  ethereumChainId?: EthereumChainId
 }
 
 /**
@@ -40,12 +41,14 @@ export class Web3Broadcaster {
     const { walletStrategy, ethereumChainId } = this
 
     try {
+      const chainId = args.ethereumChainId || ethereumChainId
+
       const txHash = await walletStrategy.sendEvmTransaction(args.tx, {
-        ethereumChainId,
         address: args.address,
+        ethereumChainId: chainId,
       })
 
-      await walletStrategy.getEvmTransactionReceipt(txHash, ethereumChainId)
+      await walletStrategy.getEvmTransactionReceipt(txHash, chainId)
 
       return txHash
     } catch (e: unknown) {

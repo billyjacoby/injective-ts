@@ -40,7 +40,7 @@ export type WalletConnectMetadata = {
 export interface WalletStrategyEthereumOptions {
   ethereumChainId: EthereumChainId
   rpcUrl?: string
-  rpcUrls?: Record<Partial<EthereumChainId>, string>
+  rpcUrls?: Partial<Record<EthereumChainId, string>>
 }
 
 export interface SendTransactionOptions {
