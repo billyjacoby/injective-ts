@@ -1,10 +1,10 @@
 import {
+  AccountStats,
   DenomHolders,
   HistoricalRPNL,
   LeaderboardRow,
   PnlLeaderboard,
   VolLeaderboard,
-  GrpcAccountStats,
   HistoricalBalance,
   HistoricalVolumes,
 } from '../types/archiver.js'
@@ -171,7 +171,10 @@ export class IndexerGrpcArchiverTransformer {
 
   static grpcAccountStatsResponseToAccountStats(
     response: InjectiveArchiverRpc.AccountStatsResponse,
-  ): GrpcAccountStats {
-    return response
+  ): AccountStats {
+    return {
+      pnl: response.pnl,
+      volume: response.volume,
+    }
   }
 }
