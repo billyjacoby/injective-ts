@@ -260,7 +260,8 @@ export class IndexerGrpcArchiverApi extends BaseGrpcConsumer {
     try {
       const response =
         await this.retry<InjectiveArchiverRpc.PnlLeaderboardFixedResolutionResponse>(
-          () => this.client.PnlLeaderboardFixedResolution(request, this.metadata),
+          () =>
+            this.client.PnlLeaderboardFixedResolution(request, this.metadata),
         )
 
       return IndexerGrpcArchiverTransformer.grpcPnlLeaderboardFixedResolutionResponseToPnlLeaderboard(
@@ -308,7 +309,8 @@ export class IndexerGrpcArchiverApi extends BaseGrpcConsumer {
     try {
       const response =
         await this.retry<InjectiveArchiverRpc.VolLeaderboardFixedResolutionResponse>(
-          () => this.client.VolLeaderboardFixedResolution(request, this.metadata),
+          () =>
+            this.client.VolLeaderboardFixedResolution(request, this.metadata),
         )
 
       return IndexerGrpcArchiverTransformer.grpcVolLeaderboardFixedResolutionResponseToVolLeaderboard(
@@ -373,6 +375,37 @@ export class IndexerGrpcArchiverApi extends BaseGrpcConsumer {
       throw new GrpcUnaryRequestException(e as Error, {
         code: UnspecifiedErrorCode,
         context: 'DenomHolders',
+        contextModule: this.module,
+      })
+    }
+  }
+
+  async fetchAccountStats({ account }: { account: string }) {
+    const request = InjectiveArchiverRpc.AccountStatsRequest.create()
+
+    request.account = account
+
+    try {
+      const response =
+        await this.retry<InjectiveArchiverRpc.AccountStatsResponse>(() =>
+          this.client.AccountStats(request, this.metadata),
+        )
+
+      return IndexerGrpcArchiverTransformer.grpcAccountStatsResponseToAccountStats(
+        response,
+      )
+    } catch (e: unknown) {
+      if (e instanceof InjectiveArchiverRpc.GrpcWebError) {
+        throw new GrpcUnaryRequestException(new Error(e.toString()), {
+          code: grpcErrorCodeToErrorCode(e.code),
+          context: 'All Time Account Stats',
+          contextModule: this.module,
+        })
+      }
+
+      throw new GrpcUnaryRequestException(e as Error, {
+        code: UnspecifiedErrorCode,
+        context: 'All Time Account Stats',
         contextModule: this.module,
       })
     }

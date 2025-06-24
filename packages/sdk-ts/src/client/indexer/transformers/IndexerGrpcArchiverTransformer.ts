@@ -1,4 +1,5 @@
 import {
+  AccountStats,
   DenomHolders,
   HistoricalRPNL,
   LeaderboardRow,
@@ -165,6 +166,15 @@ export class IndexerGrpcArchiverTransformer {
       })),
       next: response.next,
       total: response.total,
+    }
+  }
+
+  static grpcAccountStatsResponseToAccountStats(
+    response: InjectiveArchiverRpc.AccountStatsResponse,
+  ): AccountStats {
+    return {
+      pnl: response.pnl,
+      volume: response.volume,
     }
   }
 }

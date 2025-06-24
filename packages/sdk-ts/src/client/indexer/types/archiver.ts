@@ -47,7 +47,14 @@ export interface DenomHolders {
   total: number
 }
 
+export interface AccountStats {
+  pnl: number
+  volume: number
+}
+
 export type GrpcHistoricalRPNL = InjectiveArchiverRpc.HistoricalRPNL
+export type GrpcLeaderboardRow = InjectiveArchiverRpc.LeaderboardRow
+export type GrpcDenomHolders = InjectiveArchiverRpc.DenomHoldersResponse
 export type GrpcHistoricalBalance = InjectiveArchiverRpc.HistoricalBalance
 export type GrpcHistoricalVolumes = InjectiveArchiverRpc.HistoricalVolumes
 export type GrpcPnlLeaderboard =
@@ -56,5 +63,3 @@ export type GrpcPnlLeaderboard =
 export type GrpcVolLeaderboard =
   | InjectiveArchiverRpc.VolLeaderboardResponse
   | InjectiveArchiverRpc.VolLeaderboardFixedResolutionResponse
-export type GrpcLeaderboardRow = InjectiveArchiverRpc.LeaderboardRow
-export type GrpcDenomHolders = InjectiveArchiverRpc.DenomHoldersResponse
