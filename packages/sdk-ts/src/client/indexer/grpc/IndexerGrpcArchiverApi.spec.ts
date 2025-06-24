@@ -200,4 +200,25 @@ describe('IndexerGrpcArchiverApi', () => {
       )
     }
   })
+
+  test('fetchAccountStats', async () => {
+    try {
+      const response = await indexerGrpcArchiverApi.fetchAccountStats({
+        account,
+      })
+
+      expect(response).toBeDefined()
+      expect(response).toEqual(
+        expect.objectContaining<
+          ReturnType<
+            typeof IndexerGrpcArchiverTransformer.grpcAccountStatsResponseToAccountStats
+          >
+        >(response),
+      )
+    } catch (e) {
+      console.error(
+        'IndexerGrpcArchiverApi.fetchAccountStats => ' + (e as any).message,
+      )
+    }
+  })
 })
