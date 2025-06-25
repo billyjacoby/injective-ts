@@ -3,6 +3,7 @@
     "tscEsmFix": "tsc-esm-fix --src='**/*.d.ts' --ext='.js' --tsconfig='./../../tsconfig.json' && tsc-esm-fix --src='**/*.js' --ext='.js' --tsconfig='./../../tsconfig.json'"
   },
   "devDependencies": {
+    "grpc-web": "^1.5.0",
     "tsc-esm-fix": "^3.1.2",
     "ts-proto": "^1.141.1",
     "@grpc/grpc-js": "^1.12.2",

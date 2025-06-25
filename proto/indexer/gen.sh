@@ -31,64 +31,24 @@ find $BUILD_DIR/api/gen/grpc -name '*.proto' -exec cp {} $PROTO_DIR \;
 
 proto_dirs=$(find $PROTO_DIR -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
 
-# gen using ts-proto
+# gen using grpc-web
 npm --prefix $ROOT_DIR install
 for dir in $proto_dirs; do
-    protoc \
-    --plugin="$ROOT_DIR/node_modules/.bin/protoc-gen-ts_proto" \
-    --ts_proto_opt="esModuleInterop=true" \
-    --ts_proto_opt="forceLong=string" \
-    --ts_proto_opt="env=both" \
-    --ts_proto_opt="useExactTypes=false" \
-    --ts_proto_opt="outputClientImpl=grpc-web" \
-    --ts_proto_out="$TS_OUTPUT_DIR/proto" \
-    -I "$PROTO_DIR" \
-    $(find "${dir}" -maxdepth 1 -name '*.proto')
+    proto_files=$(find "${dir}" -maxdepth 1 -name '*.proto')
+    for proto_file in $proto_files; do
+              protoc \
+        --proto_path=${PROTO_DIR} \
+        --js_out=import_style=commonjs:${TS_OUTPUT_DIR}/proto \
+        --grpc-web_out=import_style=typescript,mode=grpcwebtext:${TS_OUTPUT_DIR}/proto \
+        ${proto_file}
+    done
 done
-
-find $TS_OUTPUT_DIR/proto -name "*.js" -type f -delete
-find $TS_OUTPUT_DIR/proto -name "*.d.ts" -type f -delete
 
 ########################################
 ####### POST GENERATION CLEANUP #######
 ########################################
 
 echo "Compiling npm packages..."
-
-## 1. Replace strings
-## 1. Replace packages
-search1="@improbable-eng/grpc-web"
-replace1="@injectivelabs/grpc-web"
-
-FILES=$( find $TS_OUTPUT_DIR/proto -type f )
-
-for file in $FILES
-do
-  sed -ie "s/${search1//\//\\/}/${replace1//\//\\/}/g" "$file"
-done
-
-search1="getExtension():"
-replace1="// @ts-ignore \n  getExtension():"
-search2="setExtension("
-replace2="// @ts-ignore \n  setExtension("
-
-FILES=$( find $TS_OUTPUT_DIR/proto -type f -name '*.d.ts' )
-
-for file in $FILES
-do
-  sed -ie "s/${search1//\//\\/}/${replace1//\//\\/}/g" "$file"
-  sed -ie "s/${search2//\//\\/}/${replace2//\//\\/}/g" "$file"
-done
-
-search3="protobufjs/minimal"
-replace3="protobufjs/minimal.js"
-
-FILES=$( find $TS_OUTPUT_DIR/proto -type f )
-
-for file in $FILES
-do
-  sed -ie "s/${search3//\//\\/}/${replace3//\//\\/}/g" "$file"
-done
 
 ## 4. Compile TypeScript for ESM package
 cp $TS_STUB_DIR/index.ts.template $TS_OUTPUT_DIR/proto/index.ts
@@ -114,9 +74,9 @@ cp $TS_STUB_DIR/package.json.indexer-proto-ts.template $TS_OUTPUT_DIR/package.js
 npm --prefix $ROOT_DIR run tscEsmFix
 
 # 7. Clean up folders
-rm -rf $BUILD_DIR
-rm -rf $PROTO_DIR
-rm -rf $TS_OUTPUT_DIR/proto
+# rm -rf $BUILD_DIR
+# rm -rf $PROTO_DIR
+# rm -rf $TS_OUTPUT_DIR/proto
 find $TS_OUTPUT_DIR -name "*.jse" -type f -delete
 find $TS_OUTPUT_DIR -name "*.tse" -type f -delete
 find $TS_OUTPUT_DIR -name "*.jsone" -type f -delete
